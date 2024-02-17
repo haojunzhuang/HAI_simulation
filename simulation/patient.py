@@ -21,6 +21,17 @@ class Patient:
         self.info = info
         self.infected  = False
         self.recovered = False
+    
+    def __str__(self) -> str:
+        RED = '\033[91m'
+        GREEN = '\033[92m'
+        YELLOW = '\033[93m'
+        RESET = '\033[0m' 
+
+        status_color = RED if self.infected else YELLOW if self.recovered else GREEN
+        status = f"{status_color}{' infected' if self.infected else 'recovered' if self.recovered else '  healthy'}{RESET}"
+        info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
+        return f"[Patient] - ID: {self.id}, Status: {status}, Info: [{info_str}]"
 
     def infect(self) -> None:
         """
