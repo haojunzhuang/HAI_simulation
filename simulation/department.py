@@ -1,5 +1,5 @@
 from typing import Any
-from patient import Patient
+from .patient import Patient
 
 
 class Department:
