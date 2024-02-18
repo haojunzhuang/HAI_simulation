@@ -25,7 +25,7 @@ class Department:
         self.info = info
         self.records = []
     
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
         return (
             f"Department Name: {self.name}\n"
@@ -33,6 +33,9 @@ class Department:
             f"Infected: {self.get_num_pos()}, Not Infected: {self.get_num_neg()}\n"
             f"Info: [{info_str}]"
         )
+
+    def __str__(self) -> str:
+        return self.verbose_info()
 
     def get_num_pos(self) -> int:
         return sum([p.infected for p in self.patients])
@@ -65,7 +68,6 @@ class Department:
         str
             _description_
         """
-        
 
         patient_details = '\n'.join([' ' + str(patient) for patient in self.patients])
         
