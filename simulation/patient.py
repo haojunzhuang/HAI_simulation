@@ -21,6 +21,15 @@ class Patient:
         self.info = info
         self.infected  = False
         self.recovered = False
+        # TODO: Just_Recovered?
+        
+    def __hash__(self):
+        # Use the patient_id to generate a unique hash value for each Patient object
+        return hash(self.id)
+
+    def __eq__(self, other):
+        # Two Patient objects are considered equal if their patient_id attributes are equal
+        return self.id == other.id
     
     def __str__(self) -> str:
         RED = '\033[91m'
