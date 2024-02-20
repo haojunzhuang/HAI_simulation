@@ -1,6 +1,7 @@
 from typing import Any
 from .patient import Patient
-
+import random
+import numpy as np
 
 class Department:
     """
@@ -21,9 +22,9 @@ class Department:
         """
 
         self.name = name
-        self.patients = patients
+        self.patients = set(patients)
         self.info = info
-        self.records = []
+        self.records = {'total': [], 'incidence': [], 'prevalence': []}
     
     def __repr__(self) -> str:
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
@@ -54,11 +55,10 @@ class Department:
             Number of new infections that day.
         """
         prevalence = self.get_num_pos()
-        total = prevalence + self.get_num_neg()
 
-        self.records.append(
-            {"total": total, "prevalence": prevalence, "incidence": incidence}
-        )
+        self.records['total'].append(len(self.patients))
+        self.records['incidence'].append(incidence)
+        self.records['prevalence'].append(prevalence)
     
     def verbose_info(self) -> str:
         """_summary_
@@ -80,3 +80,48 @@ class Department:
             f"Department Info: {self.info}\n"
             '---------------------------------\n'
         )
+
+    def accept_patient(self, patient:Patient):
+        self.patients.add(patient)
+    
+    def release_patient(self, patient:Patient):
+        self.patients.remove(patient)
+
+    def infect(self):
+        beta = self.info['beta']
+        gamma = self.info['gamma']
+        num_pos = self.get_num_pos()
+        num_neg = self.get_num_neg()
+
+        # Handle Empty Department
+        if (num_pos + num_neg) == 0:
+            return
+        
+        # Handle Recovery before Infection
+        for patient in self.patients:
+            if patient.infected:
+                if random.random() < gamma:
+                    patient.recover()
+        
+        p = min(beta * num_pos * num_neg / (num_pos + num_neg), 1)
+        num_infected = np.random.binomial(self.get_num_neg(), p=p)
+        i = num_infected
+        # "Shuffle the set"
+        patient_list = list(self.patients)
+        random.shuffle(patient_list)
+        self.patients = set(patient_list)
+
+        for patient in self.patients:
+            if i == 0:
+                break
+            if not patient.infected:
+                i -= 1
+                patient.infect()
+        
+        incidence = min(num_neg, num_infected)
+        self.record(incidence=incidence)
+
+
+
+
+
