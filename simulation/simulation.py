@@ -71,9 +71,7 @@ class Simulation:
             _description_
         """
 
-        if cleaned:
-            mvt = pd.read_csv(movement_data_path)
-        else:
+        if not cleaned:
             # preprocessing steps
             mvt = read_movement_data(movement_data_path)
             mvt = compress_by_day(mvt)
@@ -82,9 +80,10 @@ class Simulation:
             mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
             mvt = mvt.sort_values(by="date")
 
-            mvt.to_csv(movement_data_path[:-4] + "_cleaned.csv")
+            movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
+            mvt.to_csv(movement_data_path)
 
-        return mvt
+        return pd.read_csv(movement_data_path, parse_dates=False)
 
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
