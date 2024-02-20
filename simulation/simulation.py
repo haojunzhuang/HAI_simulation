@@ -79,6 +79,7 @@ class Simulation:
             mvt = compress_by_day(mvt)
             mvt = compress_self_loop(mvt)
             mvt = keep_departments_of_interest(mvt)
+            mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
             mvt = mvt.sort_values(by="date")
 
             mvt.to_csv(movement_data_path[:-4] + "_cleaned.csv")
