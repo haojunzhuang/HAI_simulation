@@ -1,6 +1,7 @@
 from typing import Any
 from .patient import Patient
 import random
+import time
 import numpy as np
 
 class Department:
@@ -28,12 +29,9 @@ class Department:
     
     def __repr__(self) -> str:
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
-        return (
-            f"Department Name: {self.name}\n"
-            f"Number of Patients: {len(self.patients)}\n"
-            f"Infected: {self.get_num_pos()}, Not Infected: {self.get_num_neg()}\n"
-            f"Info: [{info_str}]"
-        )
+        return  f"Department Name: {self.name}\n" + f"Number of Patients: {len(self.patients)}\n" + \
+                f"Infected: {self.get_num_pos()}, Not Infected: {self.get_num_neg()}\n" + f"Info: [{info_str}]"
+        
 
     def __str__(self) -> str:
         return self.verbose_info()
@@ -71,15 +69,14 @@ class Department:
 
         patient_details = '\n'.join([' ' + str(patient) for patient in self.patients])
         
-        print (
-            '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n'
-            f"[Department]\n"
-            f"Name: {self.name}\n"
-            f"Total Patients: {len(self.patients)}\n"
-            f"Patient Details:\n{patient_details}\n"
-            f"Department Info: {self.info}\n"
+        return f"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n" +\
+            f"[Department]\n" +\
+            f"Name: {self.name}\n" +\
+            f"Total Patients: {len(self.patients)}\n" +\
+            f"Patient Details:\n{patient_details}\n" +\
+            f"Department Info: {self.info}\n" +\
             '---------------------------------\n'
-        )
+        
 
     def accept_patient(self, patient:Patient):
         self.patients.add(patient)
@@ -87,11 +84,20 @@ class Department:
     def release_patient(self, patient:Patient):
         self.patients.remove(patient)
 
-    def infect(self):
+    def infect(self, test = False):
         beta = self.info['beta']
         gamma = self.info['gamma']
         num_pos = self.get_num_pos()
         num_neg = self.get_num_neg()
+        assert (num_pos + num_neg) == len(self.patients)
+
+        if test:
+            print(f"--------Start Infecting Department {self.name}--------\n")
+            print(f"Department Info: \n")
+            print(f"Transmission Rate: {beta}")
+            print(f"Recovery Rate: {gamma}")
+            print(f"Number of Positive Patient: {num_pos}")
+            print(f"Number of Negative Patient: {num_neg}\n")
 
         # Handle Empty Department
         if (num_pos + num_neg) == 0:
@@ -100,11 +106,20 @@ class Department:
         # Handle Recovery before Infection
         for patient in self.patients:
             if patient.infected:
-                if random.random() < gamma:
+                if test:
+                    print(f"Infected Patient: {patient}")
+                r = random.random()
+                if r < gamma:
                     patient.recover()
+                    if test:
+                        print(f"Get {r} Smaller Than {gamma}. Recovering Patient...")
+                        print(f"{patient}")
         
         p = min(beta * num_pos * num_neg / (num_pos + num_neg), 1)
         num_infected = np.random.binomial(self.get_num_neg(), p=p)
+        if test:
+            print(f"Probability of infection: {p}")
+            print(f"Number of new patient infected: {num_infected}\n")
         i = num_infected
         # "Shuffle the set"
         patient_list = list(self.patients)
@@ -117,11 +132,16 @@ class Department:
             if not patient.infected:
                 i -= 1
                 patient.infect()
+                if test:
+                    print(f"Patient {num_infected - i} being infected: {patient}")
         
         incidence = min(num_neg, num_infected)
         self.record(incidence=incidence)
 
-
+        if test:
+            print(f"Number of Incidence: {incidence}")
+            print(f"--------End Infecting Department {self.name}--------\n")
+            time.sleep(3)
 
 
 
