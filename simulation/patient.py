@@ -1,6 +1,5 @@
 from typing import Any
 
-
 class Patient:
     """
     A patient agent.
@@ -31,11 +30,17 @@ class Patient:
         # Two Patient objects are considered equal if their patient_id attributes are equal
         return self.id == other.id
     
+    def __repr__(self) -> str:
+        return self.verbose_info()
+    
     def __str__(self) -> str:
+        return self.verbose_info()
+
+    def verbose_info(self) -> str:
         RED = '\033[91m'
         GREEN = '\033[92m'
         YELLOW = '\033[93m'
-        RESET = '\033[0m' 
+        RESET = '\033[0m'
 
         status_color = RED if self.infected else YELLOW if self.recovered else GREEN
         status = f"{status_color}{' infected' if self.infected else 'recovered' if self.recovered else '  healthy'}{RESET}"

@@ -20,7 +20,8 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1
+        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1,
+        test = False
     ) -> None:
         """_summary_
 
@@ -36,20 +37,34 @@ class Simulation:
             _description_
         """
         # TODO: Modify Docstring
-
+        self.test = test
         self.movements  = self.import_data(self, movement_data_path, cleaned=cleaned)
+        self.initial_patients = initial_patients
+        self.initial_info = initial_info
+        self.uniform_alpha = uniform_alpha
+        self.uniform_beta = uniform_beta
+        self.uniform_gamma = uniform_gamma
+        self.record = {}
+
+    def setup(self):
+        if self.test:
+            print("Setting Up Simulation...")
+            time.sleep(2)
 
         self.node_names = self.movements.from_department.unique()
         self.node_names = [name for name in self.node_names if ((name != 'ADMISSION') and (name != 'DISCHARGE'))]
 
-        if initial_patients and initial_info:
-            assert set(self.node_names) == set(initial_patients.keys())
-            assert set(self.node_names) == set(initial_info.keys())
-            self.nodes = {name: Department(name, initial_patients[name], initial_info[name]) for name in self.node_names}
+        if self.initial_patients and self.initial_info:
+            assert set(self.node_names) == set(self.initial_patients.keys())
+            assert set(self.node_names) == set(self.initial_info.keys())
+            self.nodes = {name: Department(name, self.initial_patients[name], self.initial_info[name]) for name in self.node_names}
         else:
-            self.nodes = {name: Department(name, [], {'alpha': uniform_alpha, 'beta': uniform_beta, 'gamma': uniform_gamma}) for name in self.node_names}
-
-        self.record = {}
+            self.nodes = {name: Department(name, [], {'alpha': self.uniform_alpha, 'beta': self.uniform_beta, 
+                                                      'gamma': self.uniform_gamma}) for name in self.node_names}
+        
+        if self.test:
+            for name in self.nodes:
+                print(self.nodes[name])
 
     @staticmethod
     def import_data(self, movement_data_path: str, cleaned: bool) -> pd.DataFrame:
@@ -88,6 +103,10 @@ class Simulation:
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
         info     = {name: self.nodes[name].info     for name in self.node_names}
+        if self.test:
+            print("Exporting Checkpoint...")
+            print(patients)
+            print(info)
         return patients, info
     
     def move_patient(self, row):
@@ -106,18 +125,28 @@ class Simulation:
                     return patient
             raise NameError("Patient ID Not Found")
         
+        if self.test:
+            print(row)
+            print()
+
         # Handle Admission
         if row['from_department'] == 'ADMISSION':
             new_patient = Patient(row['id'], info={})
             if random.random() < self.nodes[row['to_department']].info['alpha']:
                 new_patient.infect()
             self.nodes[row['to_department']].accept_patient(new_patient)
+            if self.test:
+                print(f"New Patient Entering: {new_patient}")
 
         else:
             current_patient = find_patient(row['id'], self.nodes[row['from_department']].patients)
+            if self.test:
+                print(f"Before moving: {current_patient}")
             self.nodes[row['from_department']].release_patient(current_patient)
             if row['to_department'] != 'DISCHARGE':
                 self.nodes[row['to_department']].accept_patient(current_patient)
+            if self.test:
+                print(f"After moving: {current_patient}")
 
     def update_patient_status(self):
         """
@@ -125,7 +154,7 @@ class Simulation:
         """
 
         for _, dep in self.nodes.items():
-            dep.infect()
+            dep.infect(test = self.test)
 
     def simulate(self, timed = False):
         """
@@ -136,6 +165,11 @@ class Simulation:
         timed : bool
             Whether to test the speed of the simulation or not
         """
+        self.setup()
+
+        if self.test:
+            print(f"Starting Simulation...\n")
+            time.sleep(3)
 
         start_time = time.time()
 
@@ -145,16 +179,34 @@ class Simulation:
         duration = (end_date - start_date).days
         current_date = start_date
 
+        if self.test:
+            print(f"Simulation Start Date: {start_date}")
+            print(f"Simulation End Date: {end_date}")
+            print(f"Simulation Duration: {duration}\n")
+
         with tqdm.tqdm() as pbar:
-            for _, row in self.movements.iterrows():
+            for index, row in self.movements.iterrows():
+                if self.test:
+                    print(f"--------Reading Row {index}-------- \n")
                 self.move_patient(row)
+                if self.test:
+                    print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
+                    print(f"--------Finish Reading Row {index}-------- \n")
+                    time.sleep(3)
                 # Move patients first before infection
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
                     current_date += datetime.timedelta(days=1)
+                    if self.test:
+                        print(f"--------Processing Day {day}, {current_date}--------\n")
                     pbar.set_description(f'Processing Day {day}/{duration}')
                     self.update_patient_status()
+                    if self.test:
+                        print(f"--------Finish Processing Day {day}, {current_date}--------\n")
+                        time.sleep(3)
                 
+        if self.test:
+            print("---------Simulation END---------\n")
         end_time = time.time()
         time_taken = end_time - start_time
 
