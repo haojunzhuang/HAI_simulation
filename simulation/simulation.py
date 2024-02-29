@@ -98,7 +98,7 @@ class Simulation:
             movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
             mvt.to_csv(movement_data_path)
 
-        return pd.read_csv(movement_data_path, parse_dates=False)
+        return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
 
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
