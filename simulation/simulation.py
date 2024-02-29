@@ -168,7 +168,7 @@ class Simulation:
         self.setup()
 
         if self.test:
-            print(f"Starting Simulation...\n")
+            print( "Starting Simulation...\n")
             time.sleep(3)
 
         start_time = time.time()

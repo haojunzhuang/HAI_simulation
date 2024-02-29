@@ -172,7 +172,7 @@ def keep_departments_of_interest(df):
     vc = df.value_counts('to_department')
     blacklist = [w for w in vc.index if re.match(r'.*(MB|MZ|OAK)', w) or vc[w]<500]
     filtered_ids = df.groupby('id')['to_department'].apply(lambda x: any(item in blacklist for item in x)).reset_index()
-    result = filtered_ids.loc[filtered_ids['to_department'] == False, 'id']
+    result = filtered_ids.loc[not filtered_ids['to_department'], 'id']
 
     # print('considering:', result)
     print('not considering:', blacklist)
