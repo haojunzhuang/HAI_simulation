@@ -20,7 +20,7 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1
+        uniform_alpha = 0.05, uniform_beta = 0.005, uniform_gamma = 0.1
     ) -> None:
         """_summary_
 

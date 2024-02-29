@@ -71,7 +71,7 @@ class Department:
 
         patient_details = '\n'.join([' ' + str(patient) for patient in self.patients])
         
-        print (
+        return (
             '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n'
             f"[Department]\n"
             f"Name: {self.name}\n"
