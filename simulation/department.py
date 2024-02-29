@@ -69,8 +69,8 @@ class Department:
 
         patient_details = '\n'.join([' ' + str(patient) for patient in self.patients])
         
-        return f"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n" +\
-            f"[Department]\n" +\
+        return "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n" +\
+            "[Department]\n" +\
             f"Name: {self.name}\n" +\
             f"Total Patients: {len(self.patients)}\n" +\
             f"Patient Details:\n{patient_details}\n" +\
@@ -93,7 +93,7 @@ class Department:
 
         if test:
             print(f"--------Start Infecting Department {self.name}--------\n")
-            print(f"Department Info: \n")
+            print( "Department Info: \n")
             print(f"Transmission Rate: {beta}")
             print(f"Recovery Rate: {gamma}")
             print(f"Number of Positive Patient: {num_pos}")
