@@ -20,7 +20,7 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1,
+        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, uniform_delta = 0.15,
         test = False
     ) -> None:
         """_summary_
@@ -44,6 +44,7 @@ class Simulation:
         self.uniform_alpha = uniform_alpha
         self.uniform_beta = uniform_beta
         self.uniform_gamma = uniform_gamma
+        self.uniform_delta = uniform_delta
         self.record = {}
 
     def setup(self):
@@ -136,7 +137,7 @@ class Simulation:
                 new_patient.infect()
             self.nodes[row['to_department']].accept_patient(new_patient)
             if self.test:
-                print(f"New Patient Entering: {new_patient}")
+                print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
 
         else:
             current_patient = find_patient(row['id'], self.nodes[row['from_department']].patients)
@@ -151,10 +152,13 @@ class Simulation:
     def update_patient_status(self):
         """
         Update patient status (perform infection and recovery process)
+        Also, develop symptoms and surveil the department.
         """
 
         for _, dep in self.nodes.items():
             dep.infect(test = self.test)
+            dep.develop(self.uniform_delta, test=self.test)
+            dep.surveil(test = self.test)
 
     def simulate(self, timed = False):
         """
