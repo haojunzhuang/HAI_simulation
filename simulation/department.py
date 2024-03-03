@@ -1,5 +1,6 @@
 from typing import Any
 from .patient import Patient
+from .status import Status
 import random
 import time
 import numpy as np
@@ -37,10 +38,10 @@ class Department:
         return self.verbose_info()
 
     def get_num_pos(self) -> int:
-        return sum([p.infected for p in self.patients])
+        return sum([p.status == Status.colonized or p.status == Status.infected for p in self.patients])
 
     def get_num_neg(self) -> int:
-        return sum([not p.infected for p in self.patients])
+        return len(self.patients) - self.get_num_pos()
 
     def record(self, incidence: int) -> None:
         """
@@ -105,7 +106,7 @@ class Department:
         
         # Handle Recovery before Infection
         for patient in self.patients:
-            if patient.infected:
+            if patient.status == Status.infected:
                 if test:
                     print(f"Infected Patient: {patient}")
                 r = random.random()
@@ -142,6 +143,38 @@ class Department:
             print(f"Number of Incidence: {incidence}")
             print(f"--------End Infecting Department {self.name}--------\n")
             time.sleep(3)
+
+    def develop(self, δ: float, test=False):
+        """
+        Develop symptoms.
+        Only infected patients can develop symptoms.
+        If patient is infected but not yet have symptom, develop symptoms with probability δ.
+        If patient already has symptoms, increment the days by one.
+        """
+
+        for patient in self.patients:
+            if patient.status == Status.infected:
+                patient.develop_symptom(δ)
+
+                if test:
+                    print(f"\033[95mDeveloping Symptoms for Patient {patient.id}, Now: {patient.symptom}\033[0m")
+
+    def surveil(self, test=False):
+        """
+        to be overriden
+        """
+        return self._surveil_everyone(test)
+
+    def _surveil_everyone(self, test):
+        """
+        Naively surveil everyone in the department.
+        """
+
+        for patient in self.patients:
+            result = patient.lab()
+
+            if test:
+                print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
 
 
 

@@ -1,4 +1,6 @@
 from typing import Any
+from simulation.status import Status
+import random
 
 class Patient:
     """
@@ -18,8 +20,8 @@ class Patient:
 
         self.id = id
         self.info = info
-        self.infected  = False
-        self.recovered = False
+        self.status = Status.healthy
+        self.symptom = 0
         # TODO: Just_Recovered?
         
     def __hash__(self):
@@ -42,22 +44,58 @@ class Patient:
         YELLOW = '\033[93m'
         RESET = '\033[0m'
 
-        status_color = RED if self.infected else YELLOW if self.recovered else GREEN
-        status = f"{status_color}{' infected' if self.infected else 'recovered' if self.recovered else '  healthy'}{RESET}"
+        color_dict = {Status.healthy: GREEN, Status.colonized: YELLOW, Status.infected: RED, Status.recovered: RESET}
+        status = f"{color_dict[self.status]}{self.status.name}{RESET}"
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
         return f"[Patient] - ID: {self.id}, Status: {status}, Info: [{info_str}]"
+    
+    def colonoize(self) -> None:
+        """
+        Colonize a patient.
+        """
+
+        self.status = Status.colonized
 
     def infect(self) -> None:
         """
         Infect a patient.
         """
 
-        self.infected = True
+        self.status = Status.infected
 
     def recover(self) -> None:
         """
-        Recover a patient.
+        Recover a patient. Status changed to recovered and symptom to False.
         """
 
-        self.infected = False
-        self.recovered = True
+        self.status  = Status.recovered
+        self.symptom = 0
+    
+    def lab(self) -> Status:
+        """
+        Lab test the status of the patient.
+        In the case of C. diff, either Toxin gene or protein can be found/not found.
+        Result is assumed to be known immediately.
+
+        Returns
+        -------
+        Status
+            The status of the patient. Can be healthy, colonized, or infected.
+        """
+
+        return self.status
+    
+    def develop_symptom(self, δ) -> None:
+        """
+        Develop symptoms.
+        """
+
+        assert self.status == Status.infected, "Only infected patients can develop symptoms?"
+
+        if not self.symptom and random.random() < δ:
+            self.symptom = 1 # transition
+        else:
+            self.symptom += 1
+
+        
+    
