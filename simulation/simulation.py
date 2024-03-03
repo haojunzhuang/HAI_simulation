@@ -186,21 +186,27 @@ class Simulation:
 
         with tqdm.tqdm() as pbar:
             for index, row in self.movements.iterrows():
+
                 if self.test:
                     print(f"--------Reading Row {index}-------- \n")
-                self.move_patient(row)
+
+                self.move_patient(row) # Move patients first
+
                 if self.test:
                     print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
                     print(f"--------Finish Reading Row {index}-------- \n")
                     time.sleep(3)
-                # Move patients first before infection
+
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
                     current_date += datetime.timedelta(days=1)
+
                     if self.test:
                         print(f"--------Processing Day {day}, {current_date}--------\n")
                     pbar.set_description(f'Processing Day {day}/{duration}')
-                    self.update_patient_status()
+
+                    self.update_patient_status() # Then update patient status
+
                     if self.test:
                         print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                         time.sleep(3)

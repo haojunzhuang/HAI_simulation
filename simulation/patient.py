@@ -1,4 +1,5 @@
 from typing import Any
+from simulation.status import Status
 
 class Patient:
     """
@@ -18,8 +19,8 @@ class Patient:
 
         self.id = id
         self.info = info
-        self.infected  = False
-        self.recovered = False
+        self.status = Status.healthy
+        self.symptom = 0
         # TODO: Just_Recovered?
         
     def __hash__(self):
@@ -46,18 +47,48 @@ class Patient:
         status = f"{status_color}{' infected' if self.infected else 'recovered' if self.recovered else '  healthy'}{RESET}"
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
         return f"[Patient] - ID: {self.id}, Status: {status}, Info: [{info_str}]"
+    
+    def colonoize(self) -> None:
+        """
+        Colonize a patient.
+        """
+
+        self.status = Status.colonized
 
     def infect(self) -> None:
         """
         Infect a patient.
         """
 
-        self.infected = True
+        self.status = Status.infected
 
     def recover(self) -> None:
         """
-        Recover a patient.
+        Recover a patient. Status changed to recovered and symptom to False.
         """
 
-        self.infected = False
-        self.recovered = True
+        self.status  = Status.recovered
+        self.symptom = 0
+    
+    def test(self) -> Status:
+        """
+        Test the status of the patient.
+        In the case of C. diff, either Toxin gene or protein can be found/not found.
+
+        Returns
+        -------
+        Status
+            The status of the patient. Can be healthy, colonized, or infected.
+        """
+
+        return self.status
+    
+    def develop_symptom(self) -> None:
+        """
+        Develop symptoms.
+        """
+
+        assert self.status == Status.infected, "Only infected patients can develop symptoms?"
+        self.symptom += 1
+        
+    
