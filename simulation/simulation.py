@@ -68,7 +68,7 @@ class Simulation:
                 print(self.nodes[name])
 
     @staticmethod
-    def import_data(self, movement_data_path: str, cleaned: bool) -> pd.DataFrame:
+    def import_data(self, movement_data_path: str, cleaned: bool, fill=False, remove_loop=True) -> pd.DataFrame:
         """
         If the data is not cleaned, preprocess data and save it in a cleaned version.
         If the data is cleaned, import data directly.
@@ -89,9 +89,9 @@ class Simulation:
 
         if not cleaned:
             # preprocessing steps
-            mvt = read_movement_data(movement_data_path)
+            mvt = read_movement_data(movement_data_path, fill=fill)
             mvt = compress_by_day(mvt)
-            mvt = compress_self_loop(mvt)
+            if remove_loop: mvt = compress_self_loop(mvt)
             mvt = keep_departments_of_interest(mvt)
             mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
             mvt = mvt.sort_values(by="date")
