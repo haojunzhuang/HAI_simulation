@@ -38,6 +38,13 @@ class Department:
         return self.verbose_info()
 
     def get_num_pos(self) -> int:
+        """_summary_
+
+        Returns
+        -------
+        int
+            Number of colonized or infected Patients.
+        """
         return sum([p.status == Status.colonized or p.status == Status.infected for p in self.patients])
 
     def get_num_neg(self) -> int:
@@ -85,7 +92,17 @@ class Department:
     def release_patient(self, patient:Patient):
         self.patients.remove(patient)
 
-    def infect(self, test = False):
+    def infect(self, day:int, test=False, mode='contact'):
+        """Handle infection and recovery
+
+        Parameters
+        ----------
+        test : bool, optional
+            _description_, by default False
+        mode : str, optional
+            Contact-based or contamination-based infection, by default 'contamination'
+        """
+
         beta = self.info['beta']
         gamma = self.info['gamma']
         num_pos = self.get_num_pos()
@@ -116,21 +133,47 @@ class Department:
                         print(f"Get {r} Smaller Than {gamma}. Recovering Patient...")
                         print(f"{patient}")
         
-        p = min(beta * num_pos * num_neg / (num_pos + num_neg), 1)
-        num_infected = np.random.binomial(self.get_num_neg(), p=p)
-        if test:
-            print(f"Probability of infection: {p}")
-            print(f"Number of new patient infected: {num_infected}\n")
+        # Now Handle Infection
+        num_infected = 0
+        if mode == 'contact':
+            p = min(beta * num_pos * num_neg / (num_pos + num_neg), 1)
+            num_infected += np.random.binomial(self.get_num_neg(), p=p)
+            if test:
+                print(f"Probability of infection: {p}")
+                print(f"Number of new patient infected: {num_infected}\n")
+        elif mode == 'contamination':
+            Ppl = self.info['Ppl']
+            Plp = self.info['Plp']
+            CD  = self.info['cleaning_duration']
+            # 0 is not contaminated, 1 is contaminated, currently discrete currently discrete
+            # either clean, or already contaminated, or newly contaminated with due to infected patient staying
+            if test:
+                print(f"Old Contamination: {self.contamination}")
+            new_contamination = min(1, np.random.binomial(num_pos, Ppl))
+            self.contamination = max(self.contamination, new_contamination)
+            num_infected += np.random.binomial(num_neg, Plp)
+            if test:
+                print(f"New Contamination: {self.contamination}")
+                print(f"Number of new patient infected: {num_infected}\n")
+
+            # Cleaning the Department
+            if day % CD == 0:
+                self.contamination = 0
+                if test:
+                    print(f"Cleaning the Department at Day {day}...")
+
+        else:
+            raise NotImplementedError("Onlt contact and contamination mode are supported.")
         i = num_infected
+
         # "Shuffle the set"
         patient_list = list(self.patients)
         random.shuffle(patient_list)
         self.patients = set(patient_list)
-
         for patient in self.patients:
             if i == 0:
                 break
-            if not patient.infected:
+            if not patient.status == Status.infected:
                 i -= 1
                 patient.infect()
                 if test:

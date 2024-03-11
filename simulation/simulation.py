@@ -91,13 +91,15 @@ class Simulation:
             # preprocessing steps
             mvt = read_movement_data(movement_data_path, fill=fill)
             mvt = compress_by_day(mvt)
-            if remove_loop: mvt = compress_self_loop(mvt)
+            if remove_loop: 
+                mvt = compress_self_loop(mvt)
             mvt = keep_departments_of_interest(mvt)
             mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
             mvt = mvt.sort_values(by="date")
 
             movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
-            if fill: movement_data_path = movement_data_path[:-4] + "_filled.csv"
+            if fill: 
+                movement_data_path = movement_data_path[:-4] + "_filled.csv"
             mvt.to_csv(movement_data_path)
 
         return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
@@ -150,14 +152,14 @@ class Simulation:
             if self.test:
                 print(f"After moving: {current_patient}")
 
-    def update_patient_status(self):
+    def update_patient_status(self, day: int):
         """
         Update patient status (perform infection and recovery process)
         Also, develop symptoms and surveil the department.
         """
 
         for _, dep in self.nodes.items():
-            dep.infect(test = self.test)
+            dep.infect(day, test = self.test)
             dep.develop(self.uniform_delta, test=self.test)
             dep.surveil(test = self.test)
 
@@ -210,7 +212,7 @@ class Simulation:
                         print(f"--------Processing Day {day}, {current_date}--------\n")
                     pbar.set_description(f'Processing Day {day}/{duration}')
 
-                    self.update_patient_status() # Then update patient status
+                    self.update_patient_status(day) # Then update patient status
 
                     if self.test:
                         print(f"--------Finish Processing Day {day}, {current_date}--------\n")
