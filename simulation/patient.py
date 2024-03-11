@@ -80,22 +80,30 @@ class Patient:
         Returns
         -------
         Status
-            The status of the patient. Can be healthy, colonized, or infected.
         """
 
         return self.status
     
-    def develop_symptom(self, δ) -> None:
+    def develop_symptom(self, δ, ζ, test=False) -> None:
         """
-        Develop symptoms.
+        Develop symptoms. Either Caused by Pathogen of interest or not.
         """
 
-        assert self.status == Status.infected, "Only infected patients can develop symptoms?"
-
-        if not self.symptom and random.random() < δ:
-            self.symptom = 1 # transition
-        else:
+        if self.symptom:
             self.symptom += 1
+            if test:
+                print(f"Patient {self.id} has been symptomatic for {self.symptom} days.")
+
+        else:
+            if self.status == Status.infected and random.random() < δ:
+                self.symptom = 1
+                if test:
+                    print(f"Patient {self.id} has developed symptoms because of pathogen of interest.")
+
+            elif random.random() < ζ:
+                self.symptom = 1
+                if test:
+                    print(f"Patient {self.id} has developed symptoms, but not because of pathogen of interest.")
 
         
     

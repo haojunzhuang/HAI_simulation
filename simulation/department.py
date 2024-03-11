@@ -187,7 +187,7 @@ class Department:
             print(f"--------End Infecting Department {self.name}--------\n")
             time.sleep(3)
 
-    def develop(self, δ: float, test=False):
+    def develop(self, δ: float, ζ: float, test=False):
         """
         Develop symptoms.
         Only infected patients can develop symptoms.
@@ -197,27 +197,42 @@ class Department:
 
         for patient in self.patients:
             if patient.status == Status.infected:
-                patient.develop_symptom(δ)
+                patient.develop_symptom(δ, ζ, test=test)
 
                 if test:
-                    print(f"\033[95mDeveloping Symptoms for Patient {patient.id}, Now: {patient.symptom}\033[0m")
+                    print(f"\033[95mDeveloped Symptom for Patient {patient.id}, Now: {patient.symptom}\033[0m")
 
     def surveil(self, test=False):
         """
         to be overriden
         """
-        return self._surveil_everyone(test)
+        return self._symptom_based_surveillance(test)
 
-    def _surveil_everyone(self, test):
+    def _surveil_everyone(self, test) -> dict[Patient, Status]:
         """
         Naively surveil everyone in the department.
         """
 
+        print('WARNING: Naive Surveillance Method is Used.')
+
+        results = {}
         for patient in self.patients:
             result = patient.lab()
+            results[patient] = result
 
             if test:
                 print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+        return results
 
+    def _symptom_based_surveillance(self, test):
+        results = {}
+        for patient in self.patients:
+            if patient.symptom:
+                result = patient.lab()
+                results[patient] = result
+
+                if test:
+                    print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+        return results
 
 

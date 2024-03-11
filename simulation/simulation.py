@@ -5,6 +5,7 @@ import datetime
 import random
 from .department import Department
 from .patient import Patient
+from .status import Status
 from .utils.data_utils import (compress_by_day, compress_self_loop,
                                keep_departments_of_interest,
                                read_movement_data)
@@ -20,7 +21,7 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, uniform_delta = 0.15,
+        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, uniform_delta = 0.15, uniform_zeta = 0.05,
         test = False
     ) -> None:
         """_summary_
@@ -45,7 +46,9 @@ class Simulation:
         self.uniform_beta = uniform_beta
         self.uniform_gamma = uniform_gamma
         self.uniform_delta = uniform_delta
+        self.uniform_zeta = uniform_zeta
         self.record = {}
+        self.lab_record = []
 
     def setup(self):
         if self.test:
@@ -152,7 +155,7 @@ class Simulation:
             if self.test:
                 print(f"After moving: {current_patient}")
 
-    def update_patient_status(self, day: int):
+    def update_patient_status(self, day: int, date: datetime.datetime):
         """
         Update patient status (perform infection and recovery process)
         Also, develop symptoms and surveil the department.
@@ -160,8 +163,9 @@ class Simulation:
 
         for _, dep in self.nodes.items():
             dep.infect(day, test = self.test)
-            dep.develop(self.uniform_delta, test=self.test)
-            dep.surveil(test = self.test)
+            dep.develop(self.uniform_delta, self.uniform_zeta, test=self.test)
+            results = dep.surveil(test = self.test)
+            self._record_lab_results(date, results)
 
     def simulate(self, timed = False):
         """
@@ -212,7 +216,7 @@ class Simulation:
                         print(f"--------Processing Day {day}, {current_date}--------\n")
                     pbar.set_description(f'Processing Day {day}/{duration}')
 
-                    self.update_patient_status(day) # Then update patient status
+                    self.update_patient_status(day, current_date) # Then update patient status
 
                     if self.test:
                         print(f"--------Finish Processing Day {day}, {current_date}--------\n")
@@ -225,4 +229,29 @@ class Simulation:
 
         if timed:
             print(f"Used {time_taken} for {self.movements.shape[0]} rows of movement and {duration} days")
+
+    def _record_lab_results(self, current_date, results: dict[Patient, Status]):
+        """
+        Record the lab results of the patients in the department.
+
+        Parameters
+        ----------
+        day : int
+            The current day of the simulation
+        results : dict[Patient, int]
+            The results of the lab tests
+        """
+        for patient, result in results.items():
+            self.lab_record.append({'time': current_date, 'id': patient.id, 'result': result.value})
+    
+    def lab_results_to_df(self):
+        """
+        Convert the lab results to a DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            The lab results in a DataFrame
+        """
+        return pd.DataFrame.from_dict(self.lab_record)
     
