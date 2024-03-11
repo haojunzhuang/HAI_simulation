@@ -19,3 +19,10 @@
 - **Definition:** The rate for an infected individual's observed state to change from asymptotic to with symptom.
 - Defaults to uniform 0.15, as advised by Daniel.
   
+## $p_{pl}$ - Patient infecting Location Prob
+
+- **Definition:** TODO:
+
+## $p_{lp}$ - Location infecting Patient Prob
+
+- **Definition:** TODO:
