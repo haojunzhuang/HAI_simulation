@@ -180,3 +180,16 @@ def keep_departments_of_interest(df):
     df = df.reset_index(drop=True)
 
     return df
+
+def clean_cdiff_lab_data(path):
+    df = pd.read_csv(path)
+    df['time'] = pd.to_datetime(df['time'])
+
+    # TODO: check if take max within each group is appropriate
+    df = df.groupby([pd.Grouper(key='time', freq='D'), 'id']).max().reset_index()
+
+    # 0 (neither gene or protein), 1 (gene), 2(protein), 3(both gene and protein)
+    df['result'] = df['gene_detected'] + 2 * df['protein_detected']
+
+    df.to_csv(path[:-4]+'_cleaned.csv', index=False)
+    return df

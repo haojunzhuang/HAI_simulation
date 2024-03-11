@@ -97,6 +97,7 @@ class Simulation:
             mvt = mvt.sort_values(by="date")
 
             movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
+            if fill: movement_data_path = movement_data_path[:-4] + "_filled.csv"
             mvt.to_csv(movement_data_path)
 
         return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)

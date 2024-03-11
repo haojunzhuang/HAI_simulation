@@ -2,6 +2,7 @@ from ..department import Department
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 def plot_prevalence(department: Department):
     """
@@ -61,4 +62,47 @@ def plot_incidence(department: Department):
     plt.ylabel('Count')
     plt.xlabel('Time (Unit)')
     plt.legend(title='Type')
+    plt.show()
+
+def visualize_movement_and_test_result(test_result_df, movement_df):
+    movement_df['date'] = pd.to_datetime(movement_df['date'])
+    test_result_df['time'] = pd.to_datetime(test_result_df['time'])
+
+    # Merge test_result and movement DataFrames
+    merged_df = pd.merge(movement_df, test_result_df, left_on=['id', 'date'], right_on=['id', 'time'], how='left')
+    merged_df = merged_df.sort_values(['id', 'date'])
+
+    # Create a dictionary to map test results to colors
+    color_map = {
+        # if not in hospital, than nan
+        'In hospital, not tested': 1,
+        0: 2, # tested, negative
+        1: 3, # tested, colonized
+        2: -1,# tested, only infected, which is impossible
+        3: 4, # tested, colonized and infected
+    }
+
+    # Create a new column 'color' based on the test result and hospital status
+    merged_df['color'] = merged_df.apply(lambda row: 
+                                        color_map['In hospital, not tested'] if pd.isnull(row['result'])
+                                         else color_map[row['result']], axis=1)
+
+    # Create a pivot table for the heatmap
+    pivot_df = merged_df.pivot_table(index='id', columns='date', values='color', aggfunc='first')
+
+    return merged_df, pivot_df
+
+def plot_heatmap(pivot_df):
+    pivot_np = pivot_df.to_numpy()
+    pivot_np = np.where(np.isnan(pivot_np), 0, pivot_np)
+
+    plt.figure(figsize=(15,10))
+    plt.imshow(pivot_np[1500:1750,:2000], cmap='viridis', interpolation='nearest')  # 'cmap' controls the color map
+
+    plt.colorbar()
+
+    plt.title('Heatmap')
+    plt.xlabel('Days')
+    plt.ylabel('Patient')
+
     plt.show()
