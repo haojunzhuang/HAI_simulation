@@ -93,14 +93,13 @@ class Patient:
             self.symptom += 1
             if test:
                 print(f"Patient {self.id} has been symptomatic for {self.symptom} days.")
-
         else:
-            if self.status == Status.infected and random.random() < δ:
-                self.symptom = 1
-                if test:
-                    print(f"Patient {self.id} has developed symptoms because of pathogen of interest.")
-
-            elif random.random() < ζ:
+            if self.status == Status.infected:
+                if random.random() < δ:
+                    self.symptom = 1
+                    if test:
+                        print(f"Patient {self.id} has developed symptoms because of pathogen of interest.")
+            if random.random() < ζ:
                 self.symptom = 1
                 if test:
                     print(f"Patient {self.id} has developed symptoms, but not because of pathogen of interest.")

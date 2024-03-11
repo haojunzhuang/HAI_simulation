@@ -93,7 +93,7 @@ class Department:
         self.patients.remove(patient)
 
     def infect(self, day:int, test=False, mode='contact'):
-        """Handle infection and recovery
+        """Handle colonization, infection and recovery
 
         Parameters
         ----------
@@ -196,11 +196,10 @@ class Department:
         """
 
         for patient in self.patients:
-            if patient.status == Status.infected:
-                patient.develop_symptom(δ, ζ, test=test)
+            patient.develop_symptom(δ, ζ, test=test)
 
-                if test:
-                    print(f"\033[95mDeveloped Symptom for Patient {patient.id}, Now: {patient.symptom}\033[0m")
+            if test:
+                print(f"\033[95mDeveloped Symptom for Patient {patient.id}, Now: {patient.symptom}\033[0m")
 
     def surveil(self, test=False):
         """
@@ -208,26 +207,28 @@ class Department:
         """
         return self._symptom_based_surveillance(test)
 
-    def _surveil_everyone(self, test) -> dict[Patient, Status]:
-        """
-        Naively surveil everyone in the department.
-        """
+    # def _surveil_everyone(self, test) -> dict[Patient, Status]:
+    #     """
+    #     Naively surveil everyone in the department.
+    #     """
 
-        print('WARNING: Naive Surveillance Method is Used.')
+    #     print('WARNING: Naive Surveillance Method is Used.')
 
-        results = {}
-        for patient in self.patients:
-            result = patient.lab()
-            results[patient] = result
+    #     results = {}
+    #     for patient in self.patients:
+    #         result = patient.lab()
+    #         results[patient] = result
 
-            if test:
-                print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
-        return results
+    #         if test:
+    #             print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+    #     return results
 
     def _symptom_based_surveillance(self, test):
         results = {}
         for patient in self.patients:
             if patient.symptom:
+                if test:
+                    print(f'\034[96mpatient {patient.id} who is {patient.status} is symptotic, therefore tested.\034[0m')
                 result = patient.lab()
                 results[patient] = result
 
