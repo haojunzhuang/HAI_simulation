@@ -10,6 +10,7 @@ from .status import Status
 from .utils.data_utils import (compress_by_day, compress_self_loop,
                                keep_departments_of_interest,
                                read_movement_data)
+from collections import deque
 
 class Simulation:
     """
@@ -128,7 +129,7 @@ class Simulation:
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
         """
-        PADDING = 2
+        PADDING = 10
         
         self.condensed_matrix_mode = True
         assert self.total_days, "Needs to be called on second run"
@@ -136,8 +137,10 @@ class Simulation:
         
         self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
         height = sum(self.dep_sizes.values())
-        self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] for i in range(self.node_names.index(name))) for name in self.node_names}
-        self.bed_pointers = {name: self.dep_start_pos[name] for name in self.node_names}
+        self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] 
+                            for i in range(self.node_names.index(name))) for name in self.node_names}
+        self.bed_queues = {name: deque([i for i in range(self.dep_start_pos[name], self.dep_start_pos[name]+self.dep_sizes[name])])
+                            for name in self.node_names}
 
         # condensed matrix
         self.real_CD = np.zeros((height, width))
@@ -145,14 +148,13 @@ class Simulation:
 
 
     def allocate_bed(self, from_dep, to_dep, patient):
-        """bed pointer of each department points to the next available bed
+        """bed queue of each department
         """
         if from_dep != 'ADMISSION':
-            self.bed_pointers[from_dep] -= 1
+            self.bed_queues[from_dep].append(patient.location)
 
         if to_dep != 'DISCHARGE':
-            patient.location = self.bed_pointers[to_dep]
-            self.bed_pointers[to_dep] += 1
+            patient.location = self.bed_queues[to_dep].popleft()
         
     
     def move_patient(self, row):
