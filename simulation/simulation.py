@@ -50,7 +50,8 @@ class Simulation:
         self.uniform_zeta = uniform_zeta
         self.uniform_eta = uniform_eta
         self.record = {}
-        self.lab_record = []
+        self.real_lab_record = []
+        self.observed_lab_record = []
 
     def setup(self):
         if self.test:
@@ -164,10 +165,14 @@ class Simulation:
         """
 
         for _, dep in self.nodes.items():
+            # Colonize and Recover
             dep.infect(day, test = self.test)
+            # Infect and Symptom
             dep.develop(self.uniform_eta, self.uniform_delta, self.uniform_zeta, test=self.test)
-            results = dep.surveil(test = self.test)
-            self._record_lab_results(date, results)
+            # Lab Test Record
+            real_results, observed_results = dep.surveil(test = self.test)
+            self._record_lab_results(date, self.real_lab_record, real_results)
+            self._record_lab_results(date, self.observed_lab_record, observed_results)
 
     def simulate(self, timed = False):
         """
@@ -232,7 +237,7 @@ class Simulation:
         if timed:
             print(f"Used {time_taken} for {self.movements.shape[0]} rows of movement and {duration} days")
 
-    def _record_lab_results(self, current_date, results: dict[Patient, Status]):
+    def _record_lab_results(self, current_date, record: list[dict], results: dict[Patient, Status]):
         """
         Record the lab results of the patients in the department.
 
@@ -244,9 +249,9 @@ class Simulation:
             The results of the lab tests
         """
         for patient, result in results.items():
-            self.lab_record.append({'time': current_date, 'id': patient.id, 'result': result.value})
+            record.append({'time': current_date, 'id': patient.id, 'result': result.value})
     
-    def lab_results_to_df(self):
+    def lab_results_to_df(self, option: str = 'real') -> pd.DataFrame:
         """
         Convert the lab results to a DataFrame
 
@@ -255,5 +260,8 @@ class Simulation:
         pd.DataFrame
             The lab results in a DataFrame
         """
-        return pd.DataFrame.from_dict(self.lab_record)
+        if option == 'real':
+            return pd.DataFrame.from_dict(self.real_lab_record)
+        else:
+            return pd.DataFrame.from_dict(self.observed_lab_record)
     

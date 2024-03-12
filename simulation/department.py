@@ -206,26 +206,35 @@ class Department:
             patient.develop_symptom(δ, ζ, test=test)
 
     def surveil(self, test=False):
+        """_summary_
+
+        Parameters
+        ----------
+        test : bool, optional
+            _description_, by default False
+
+        Returns
+        -------
+        dict[Patient, Status]
+            ground truth patient status
+        dict[Patient, Status]
+            observed patient status
         """
-        to be overriden
+        return self._surveil_everyone(test), self._symptom_based_surveillance(test)
+
+    def _surveil_everyone(self, test) -> dict[Patient, Status]:
         """
-        return self._symptom_based_surveillance(test)
+        Naively surveil everyone in the department.
+        """
 
-    # def _surveil_everyone(self, test) -> dict[Patient, Status]:
-    #     """
-    #     Naively surveil everyone in the department.
-    #     """
+        results = {}
+        for patient in self.patients:
+            result = patient.lab()
+            results[patient] = result
 
-    #     print('WARNING: Naive Surveillance Method is Used.')
-
-    #     results = {}
-    #     for patient in self.patients:
-    #         result = patient.lab()
-    #         results[patient] = result
-
-    #         if test:
-    #             print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
-    #     return results
+            if test:
+                print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+        return results
 
     def _symptom_based_surveillance(self, test):
         results = {}
