@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+import numpy as np
 
 class entry_sampler:
     
@@ -32,3 +33,14 @@ class entry_sampler:
             return random.sample(list(self.weekday_entries['num_entries']), 1)[0]
         else:
             return random.sample(list(self.weekend_entries['num_entries']), 1)[0]
+        
+class toy_entry_sampler:
+
+    def __init__(self) -> None:
+        return
+    
+    def sample(self, mean=60, sd=20):
+        """
+        Sample from a random normal distribution
+        """
+        return int(round(max(0,np.random.normal(mean, sd))))

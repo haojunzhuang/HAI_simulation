@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+import numpy as np
 
 class duration_sampler:
     
@@ -36,3 +37,14 @@ class duration_sampler:
         
     def sample(self):
         return random.sample(list(self.durations), 1)[0]
+    
+class toy_duration_sampler:
+
+    def __init__(self) -> None:
+        return
+    
+    def sample(self, mean=1.3, sd=0.95):
+        """
+        Sample from a random log-normal distribution
+        """
+        return int(round(max(0,np.random.lognormal(mean, sd))))
