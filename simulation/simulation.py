@@ -21,7 +21,8 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, uniform_delta = 0.15, uniform_zeta = 0.05,
+        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, 
+        uniform_delta = 0.15, uniform_zeta = 0.05, uniform_eta = 0.20,
         test = False
     ) -> None:
         """_summary_
@@ -47,6 +48,7 @@ class Simulation:
         self.uniform_gamma = uniform_gamma
         self.uniform_delta = uniform_delta
         self.uniform_zeta = uniform_zeta
+        self.uniform_eta = uniform_eta
         self.record = {}
         self.lab_record = []
 
@@ -163,7 +165,7 @@ class Simulation:
 
         for _, dep in self.nodes.items():
             dep.infect(day, test = self.test)
-            dep.develop(self.uniform_delta, self.uniform_zeta, test=self.test)
+            dep.develop(self.uniform_eta, self.uniform_delta, self.uniform_zeta, test=self.test)
             results = dep.surveil(test = self.test)
             self._record_lab_results(date, results)
 

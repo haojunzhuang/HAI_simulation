@@ -123,9 +123,9 @@ class Department:
         
         # Handle Recovery before Infection
         for patient in self.patients:
-            if patient.status == Status.infected:
+            if patient.symptom:
                 if test:
-                    print(f"Infected Patient: {patient}")
+                    print(f"Symptotic Patient: {patient}")
                 r = random.random()
                 if r < gamma:
                     patient.recover()
@@ -175,7 +175,7 @@ class Department:
                 break
             if not patient.status == Status.infected:
                 i -= 1
-                patient.infect()
+                patient.colonize()
                 if test:
                     print(f"Patient {num_infected - i} being infected: {patient}")
         
@@ -187,19 +187,23 @@ class Department:
             print(f"--------End Infecting Department {self.name}--------\n")
             time.sleep(3)
 
-    def develop(self, δ: float, ζ: float, test=False):
+    def develop(self, η: float, δ: float, ζ: float, test=False):
         """
-        Develop symptoms.
+        Develop infection and symptoms.
+        Only colonize patients can become infected.
         Only infected patients can develop symptoms.
         If patient is infected but not yet have symptom, develop symptoms with probability δ.
         If patient already has symptoms, increment the days by one.
         """
 
         for patient in self.patients:
-            patient.develop_symptom(δ, ζ, test=test)
+            if patient.status == Status.colonized:
+                if random.random() < η:
+                    patient.infect()
+                    if test:
+                        print(f"\033[96m Colonized patient become infected: {patient.id}\033[0m")
 
-            if test:
-                print(f"\033[95mDeveloped Symptom for Patient {patient.id}, Now: {patient.symptom}\033[0m")
+            patient.develop_symptom(δ, ζ, test=test)
 
     def surveil(self, test=False):
         """

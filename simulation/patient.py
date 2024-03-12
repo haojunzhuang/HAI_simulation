@@ -49,7 +49,7 @@ class Patient:
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
         return f"[Patient] - ID: {self.id}, Status: {status}, Info: [{info_str}]"
     
-    def colonoize(self) -> None:
+    def colonize(self) -> None:
         """
         Colonize a patient.
         """
@@ -65,10 +65,12 @@ class Patient:
 
     def recover(self) -> None:
         """
-        Recover a patient. Status changed to recovered and symptom to False.
+        Recover a patient by setting symptom to 0. Patient can be infected or not.
+        Status changed to recovered if infected originally.
         """
-
-        self.status  = Status.recovered
+        
+        if self.status == Status.infected:
+            self.status  = Status.recovered
         self.symptom = 0
     
     def lab(self) -> Status:

@@ -31,3 +31,8 @@
 ## $p_{lp}$ - Location infecting Patient Prob
 
 - **Definition:** TODO:
+
+## Zeta (ζ) - Colonized to Infection Rate
+
+- **Definition:** TODO:
+- Defaults to uniform 0.20
