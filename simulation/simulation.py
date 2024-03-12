@@ -1,13 +1,16 @@
 import pandas as pd
+import numpy as np
 import tqdm
 import time
 import datetime
 import random
 from .department import Department
 from .patient import Patient
+from .status import Status
 from .utils.data_utils import (compress_by_day, compress_self_loop,
                                keep_departments_of_interest,
                                read_movement_data)
+from collections import deque
 
 class Simulation:
     """
@@ -20,8 +23,9 @@ class Simulation:
         cleaned: bool,
         initial_patients: dict[str, list[Patient]] | None,
         initial_info: dict[str, dict] | None,
-        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, uniform_delta = 0.15,
-        test = False
+        uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, 
+        uniform_delta = 0.15, uniform_zeta = 0.05, uniform_eta = 0.20,
+        test = False,
     ) -> None:
         """_summary_
 
@@ -45,12 +49,17 @@ class Simulation:
         self.uniform_beta = uniform_beta
         self.uniform_gamma = uniform_gamma
         self.uniform_delta = uniform_delta
-        self.record = {}
+        self.uniform_zeta = uniform_zeta
+        self.uniform_eta = uniform_eta
+
+        self.condensed_matrix_mode = False
 
     def setup(self):
         if self.test:
             print("Setting Up Simulation...")
             time.sleep(2)
+        
+        self.record = {}
 
         self.node_names = self.movements.from_department.unique()
         self.node_names = [name for name in self.node_names if ((name != 'ADMISSION') and (name != 'DISCHARGE'))]
@@ -113,6 +122,41 @@ class Simulation:
             print(info)
         return patients, info
     
+    def init_condensed_matrix(self):
+        """
+        called on second run, after completing the first simulation
+
+        Initialize a condensed matrix representation analogous to bed management in hospital
+        Hopefully convenient for Masked Autoencoder
+        """
+        PADDING = 20
+        
+        self.condensed_matrix_mode = True
+        assert self.total_days, "Needs to be called on second run"
+        width = self.total_days
+        
+        self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
+        height = sum(self.dep_sizes.values())
+        self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] 
+                            for i in range(self.node_names.index(name))) for name in self.node_names}
+        self.bed_queues = {name: deque([i for i in range(self.dep_start_pos[name], self.dep_start_pos[name]+self.dep_sizes[name])])
+                            for name in self.node_names}
+
+        # condensed matrix
+        self.real_CD = np.zeros((height, width))
+        self.observed_CD = np.zeros((height, width))
+
+
+    def allocate_bed(self, from_dep, to_dep, patient):
+        """bed queue of each department
+        """
+        if from_dep != 'ADMISSION':
+            self.bed_queues[from_dep].append(patient.location)
+
+        if to_dep != 'DISCHARGE':
+            patient.location = self.bed_queues[to_dep].popleft()
+        
+    
     def move_patient(self, row):
         """
         For each row in the movement data, move the patient accordingly
@@ -141,7 +185,7 @@ class Simulation:
             self.nodes[row['to_department']].accept_patient(new_patient)
             if self.test:
                 print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
-
+            patient = new_patient
         else:
             current_patient = find_patient(row['id'], self.nodes[row['from_department']].patients)
             if self.test:
@@ -151,17 +195,38 @@ class Simulation:
                 self.nodes[row['to_department']].accept_patient(current_patient)
             if self.test:
                 print(f"After moving: {current_patient}")
+            patient = current_patient
+        
+        if self.condensed_matrix_mode:
+            self.allocate_bed(row['from_department'], row['to_department'], patient)
+    
 
-    def update_patient_status(self, day: int):
+    def update_patient_status(self, day: int, date: datetime.datetime):
         """
         Update patient status (perform infection and recovery process)
         Also, develop symptoms and surveil the department.
         """
 
         for _, dep in self.nodes.items():
+            # Colonize and Recover
             dep.infect(day, test = self.test)
-            dep.develop(self.uniform_delta, test=self.test)
-            dep.surveil(test = self.test)
+            # Infect and Symptom
+            dep.develop(self.uniform_eta, self.uniform_delta, self.uniform_zeta, test=self.test)
+
+            # Lab Test Record
+            # real_results, observed_results = dep.surveil(test = self.test)
+            # self._record_lab_results(date, self.real_lab_record, real_results)
+            # self._record_lab_results(date, self.observed_lab_record, observed_results)
+            if self.condensed_matrix_mode:
+                observed_results = dep.surveil(test = self.test)
+                
+                for patient in dep.patients:
+                    self.real_CD[patient.location, day] = patient.status.value
+                    self.observed_CD[patient.location, day] = 1
+
+                for patient, status in observed_results.items():
+                    self.observed_CD[patient.location, day] = status.value
+            
 
     def simulate(self, timed = False):
         """
@@ -212,12 +277,14 @@ class Simulation:
                         print(f"--------Processing Day {day}, {current_date}--------\n")
                     pbar.set_description(f'Processing Day {day}/{duration}')
 
-                    self.update_patient_status(day) # Then update patient status
+                    self.update_patient_status(day, current_date) # Then update patient status
 
                     if self.test:
                         print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                         time.sleep(3)
-                
+        
+        self.total_days = day # for init condensed matrix in second run
+
         if self.test:
             print("---------Simulation END---------\n")
         end_time = time.time()
@@ -225,4 +292,28 @@ class Simulation:
 
         if timed:
             print(f"Used {time_taken} for {self.movements.shape[0]} rows of movement and {duration} days")
+
+    def _record_lab_results(self, current_date, record: list[dict], results: dict[Patient, Status]):
+        """
+        Record the lab results of the patients in the department.
+
+        Parameters
+        ----------
+        day : int
+            The current day of the simulation
+        results : dict[Patient, int]
+            The results of the lab tests
+        """
+        pass
+    
+    def lab_results_to_df(self, option: str = 'real') -> pd.DataFrame:
+        """
+        Convert the lab results to a DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            The lab results in a DataFrame
+        """
+        pass
     

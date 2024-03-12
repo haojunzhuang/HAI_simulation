@@ -93,7 +93,7 @@ class Department:
         self.patients.remove(patient)
 
     def infect(self, day:int, test=False, mode='contact'):
-        """Handle infection and recovery
+        """Handle colonization, infection and recovery
 
         Parameters
         ----------
@@ -123,9 +123,9 @@ class Department:
         
         # Handle Recovery before Infection
         for patient in self.patients:
-            if patient.status == Status.infected:
+            if patient.symptom:
                 if test:
-                    print(f"Infected Patient: {patient}")
+                    print(f"Symptotic Patient: {patient}")
                 r = random.random()
                 if r < gamma:
                     patient.recover()
@@ -175,7 +175,7 @@ class Department:
                 break
             if not patient.status == Status.infected:
                 i -= 1
-                patient.infect()
+                patient.colonize()
                 if test:
                     print(f"Patient {num_infected - i} being infected: {patient}")
         
@@ -187,37 +187,64 @@ class Department:
             print(f"--------End Infecting Department {self.name}--------\n")
             time.sleep(3)
 
-    def develop(self, δ: float, test=False):
+    def develop(self, η: float, δ: float, ζ: float, test=False):
         """
-        Develop symptoms.
+        Develop infection and symptoms.
+        Only colonize patients can become infected.
         Only infected patients can develop symptoms.
         If patient is infected but not yet have symptom, develop symptoms with probability δ.
         If patient already has symptoms, increment the days by one.
         """
 
         for patient in self.patients:
-            if patient.status == Status.infected:
-                patient.develop_symptom(δ)
+            if patient.status == Status.colonized:
+                if random.random() < η:
+                    patient.infect()
+                    if test:
+                        print(f"\033[96m Colonized patient become infected: {patient.id}\033[0m")
 
-                if test:
-                    print(f"\033[95mDeveloping Symptoms for Patient {patient.id}, Now: {patient.symptom}\033[0m")
+            patient.develop_symptom(δ, ζ, test=test)
 
     def surveil(self, test=False):
-        """
-        to be overriden
-        """
-        return self._surveil_everyone(test)
+        """_summary_
 
-    def _surveil_everyone(self, test):
-        """
-        Naively surveil everyone in the department.
-        """
+        Parameters
+        ----------
+        test : bool, optional
+            _description_, by default False
 
+        Returns
+        -------
+        dict[Patient, Status]
+            observed patient status
+        """
+        return self._symptom_based_surveillance(test)
+
+    # def _surveil_everyone(self, test) -> dict[Patient, Status]:
+    #     """
+    #     Naively surveil everyone in the department.
+    #     """
+
+    #     results = {}
+    #     for patient in self.patients:
+    #         result = patient.lab()
+    #         results[patient] = result
+
+    #         if test:
+    #             print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+    #     return results
+
+    def _symptom_based_surveillance(self, test):
+        results = {}
         for patient in self.patients:
-            result = patient.lab()
+            if patient.symptom:
+                if test:
+                    print(f'\034[96mpatient {patient.id} who is {patient.status} is symptotic, therefore tested.\034[0m')
+                result = patient.lab()
+                results[patient] = result
 
-            if test:
-                print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
-
+                if test:
+                    print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+        return results
 
 

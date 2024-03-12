@@ -92,12 +92,12 @@ def visualize_movement_and_test_result(test_result_df, movement_df):
 
     return merged_df, pivot_df
 
-def plot_heatmap(pivot_df):
+def plot_heatmap(pivot_df, x_range = slice(100), y_range = slice(100)):
     pivot_np = pivot_df.to_numpy()
     pivot_np = np.where(np.isnan(pivot_np), 0, pivot_np)
 
-    plt.figure(figsize=(15,10))
-    plt.imshow(pivot_np[1500:1750,:2000], cmap='viridis', interpolation='nearest')  # 'cmap' controls the color map
+    # plt.figure(figsize=(15,10))
+    plt.imshow(pivot_np[x_range,y_range], cmap='viridis', interpolation='nearest')  # 'cmap' controls the color map
 
     plt.colorbar()
 

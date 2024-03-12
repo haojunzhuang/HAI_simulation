@@ -4,4 +4,4 @@ class Status(Enum):
     healthy   = 1
     colonized = 2
     infected  = 3
-    recovered = 4
+    recovered = 1

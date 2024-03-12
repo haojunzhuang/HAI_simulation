@@ -49,7 +49,7 @@ class Patient:
         info_str = ', '.join(f"{key}: {value}" for key, value in self.info.items())
         return f"[Patient] - ID: {self.id}, Status: {status}, Info: [{info_str}]"
     
-    def colonoize(self) -> None:
+    def colonize(self) -> None:
         """
         Colonize a patient.
         """
@@ -65,10 +65,12 @@ class Patient:
 
     def recover(self) -> None:
         """
-        Recover a patient. Status changed to recovered and symptom to False.
+        Recover a patient by setting symptom to 0. Patient can be infected or not.
+        Status changed to recovered if infected originally.
         """
-
-        self.status  = Status.recovered
+        
+        if self.status == Status.infected:
+            self.status  = Status.recovered
         self.symptom = 0
     
     def lab(self) -> Status:
@@ -80,22 +82,29 @@ class Patient:
         Returns
         -------
         Status
-            The status of the patient. Can be healthy, colonized, or infected.
         """
 
         return self.status
     
-    def develop_symptom(self, δ) -> None:
+    def develop_symptom(self, δ, ζ, test=False) -> None:
         """
-        Develop symptoms.
+        Develop symptoms. Either Caused by Pathogen of interest or not.
         """
 
-        assert self.status == Status.infected, "Only infected patients can develop symptoms?"
-
-        if not self.symptom and random.random() < δ:
-            self.symptom = 1 # transition
-        else:
+        if self.symptom:
             self.symptom += 1
+            if test:
+                print(f"Patient {self.id} has been symptomatic for {self.symptom} days.")
+        else:
+            if self.status == Status.infected:
+                if random.random() < δ:
+                    self.symptom = 1
+                    if test:
+                        print(f"Patient {self.id} has developed symptoms because of pathogen of interest.")
+            if random.random() < ζ:
+                self.symptom = 1
+                if test:
+                    print(f"Patient {self.id} has developed symptoms, but not because of pathogen of interest.")
 
         
     
