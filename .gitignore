@@ -1,6 +1,7 @@
 # data related
 *.csv
 *.ipynb
+*.pkl
 data/
 
 #OS

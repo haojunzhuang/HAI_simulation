@@ -14,7 +14,9 @@ def perform_test(path, alpha, beta, gamma):
 # Test 2: Rapid Patient Turnover
 # Test 3: Long Range Infection
 
-test_ID = 3
+# test_ID = 3
 
-perform_test(path=f"simulation/test_data/test_dataset_{test_ID}.csv",
-             alpha=0.8, beta=0.5, gamma=0.8)
+# perform_test(path=f"simulation/test_data/test_dataset_{test_ID}.csv",
+#              alpha=0.8, beta=0.5, gamma=0.8)
+
+Simulation.import_data(None, 'data/movements.csv', cleaned=False, fill=True, remove_loop=False)
