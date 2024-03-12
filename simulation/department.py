@@ -216,25 +216,23 @@ class Department:
         Returns
         -------
         dict[Patient, Status]
-            ground truth patient status
-        dict[Patient, Status]
             observed patient status
         """
-        return self._surveil_everyone(test), self._symptom_based_surveillance(test)
+        return self._symptom_based_surveillance(test)
 
-    def _surveil_everyone(self, test) -> dict[Patient, Status]:
-        """
-        Naively surveil everyone in the department.
-        """
+    # def _surveil_everyone(self, test) -> dict[Patient, Status]:
+    #     """
+    #     Naively surveil everyone in the department.
+    #     """
 
-        results = {}
-        for patient in self.patients:
-            result = patient.lab()
-            results[patient] = result
+    #     results = {}
+    #     for patient in self.patients:
+    #         result = patient.lab()
+    #         results[patient] = result
 
-            if test:
-                print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
-        return results
+    #         if test:
+    #             print(f'\033[96mTested patient {patient.id} and found {result}.\033[0m')
+    #     return results
 
     def _symptom_based_surveillance(self, test):
         results = {}

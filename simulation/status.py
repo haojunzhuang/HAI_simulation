@@ -1,7 +1,7 @@
 from enum import Enum
 
 class Status(Enum):
-    healthy   = 0
-    colonized = 1
+    healthy   = 1
+    colonized = 2
     infected  = 3
-    recovered = 0
+    recovered = 1
