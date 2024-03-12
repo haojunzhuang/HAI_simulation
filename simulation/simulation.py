@@ -129,7 +129,7 @@ class Simulation:
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
         """
-        PADDING = 10
+        PADDING = 20
         
         self.condensed_matrix_mode = True
         assert self.total_days, "Needs to be called on second run"
@@ -219,11 +219,13 @@ class Simulation:
             # self._record_lab_results(date, self.observed_lab_record, observed_results)
             if self.condensed_matrix_mode:
                 observed_results = dep.surveil(test = self.test)
-                for patient, status in observed_results.items():
-                    self.observed_CD[patient.location, day] = status.value
                 
                 for patient in dep.patients:
                     self.real_CD[patient.location, day] = patient.status.value
+                    self.observed_CD[patient.location, day] = 1
+
+                for patient, status in observed_results.items():
+                    self.observed_CD[patient.location, day] = status.value
             
 
     def simulate(self, timed = False):
