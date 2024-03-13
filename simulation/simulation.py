@@ -129,7 +129,7 @@ class Simulation:
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
         """
-        PADDING = 20
+        PADDING = 10
         
         self.condensed_matrix_mode = True
         assert self.total_days, "Needs to be called on second run"
@@ -151,7 +151,7 @@ class Simulation:
         """bed queue of each department
         """
         if from_dep != 'ADMISSION':
-            self.bed_queues[from_dep].append(patient.location)
+            self.bed_queues[from_dep].appendleft(patient.location)
 
         if to_dep != 'DISCHARGE':
             patient.location = self.bed_queues[to_dep].popleft()
@@ -181,7 +181,7 @@ class Simulation:
         if row['from_department'] == 'ADMISSION':
             new_patient = Patient(row['id'], info={})
             if random.random() < self.nodes[row['to_department']].info['alpha']:
-                new_patient.infect()
+                new_patient.colonize()
             self.nodes[row['to_department']].accept_patient(new_patient)
             if self.test:
                 print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
