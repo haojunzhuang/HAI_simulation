@@ -181,7 +181,7 @@ class Simulation:
         if row['from_department'] == 'ADMISSION':
             new_patient = Patient(row['id'], info={})
             if random.random() < self.nodes[row['to_department']].info['alpha']:
-                new_patient.infect()
+                new_patient.colonize()
             self.nodes[row['to_department']].accept_patient(new_patient)
             if self.test:
                 print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
