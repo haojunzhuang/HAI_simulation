@@ -44,3 +44,22 @@ class toy_entry_sampler:
         Sample from a random normal distribution
         """
         return int(round(max(0,np.random.normal(mean, sd))))
+    
+class quick_entry_sampler:
+    def __init__(self, num_entry_path:str) -> None:
+        daily_entries = pd.read_csv(num_entry_path)
+        weekend_entries = daily_entries[(daily_entries['weekday'] == "Saturday") |
+                                                (daily_entries['weekday'] == "Sunday")]
+
+        weekday_entries = daily_entries[(daily_entries['weekday'] != "Saturday") &
+                                                (daily_entries['weekday'] != "Sunday")]
+        
+        self.weekend_entries = weekend_entries
+        self.weekday_entries = weekday_entries
+    
+    def sample(self, date):
+        weekday = pd.to_datetime(date).weekday()
+        if weekday < 5:
+            return random.sample(list(self.weekday_entries['num_entries']), 1)[0]
+        else:
+            return random.sample(list(self.weekend_entries['num_entries']), 1)[0]

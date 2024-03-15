@@ -5,9 +5,10 @@ import tqdm
 
 class path_sampler:
     
-    def __init__(self, data_path, transition_matrix_folder_path=None) -> None:
-        data = pd.read_csv(data_path).drop(columns=['Unnamed: 0']).dropna()
-        self.data = data
+    def __init__(self, data_path=None, transition_matrix_folder_path=None) -> None:
+        if data_path:
+            data = pd.read_csv(data_path).drop(columns=['Unnamed: 0']).dropna()
+            self.data = data
         if transition_matrix_folder_path:
             self.transition_matrix_folder_path = transition_matrix_folder_path
 
@@ -53,9 +54,11 @@ class path_sampler:
             filtered_df = filter_patients_by_duration(self.data, k)
             transition_matrix = create_transition_matrix(filtered_df)
             if method == "sliding_window":
-                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_{method}_size_{window_size}.pkl")
-            else:
-                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_{method}.pkl")
+                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_sw_{window_size}.pkl")
+            elif method == "longer_only":
+                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_lo.pkl")
+            elif method == "shorter_only":
+                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_so.pkl")
 
     def sample(self, duration, method, window_size=0):
         def simulate_path(transition_matrix, num_step=0, start_state='ADMISSION', end_state='DISCHARGE'):
@@ -103,9 +106,12 @@ class path_sampler:
         
         assert duration >= 0, "Duration needs to be positive"
         if method == "sliding_window":
-            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_{method}_size_{window_size}.pkl")
-        else:
-            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_{method}.pkl")
+            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_sw_{window_size}.pkl")
+        elif method == "shorter_only":
+            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_so.pkl")
+        elif method == "longer_only":
+            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_lo.pkl")
+
         return simulate_path(transition_matrix, num_step=duration)
     
 class toy_path_sampler:

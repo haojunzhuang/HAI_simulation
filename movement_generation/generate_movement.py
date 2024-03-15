@@ -4,19 +4,25 @@ import random
 import numpy as np
 import tqdm
 import os
-from entry_sampler import entry_sampler, toy_entry_sampler
-from duration_sampler import duration_sampler, toy_duration_sampler
+import argparse
+from entry_sampler import entry_sampler, toy_entry_sampler, quick_entry_sampler
+from duration_sampler import duration_sampler, toy_duration_sampler, quick_duration_sampler
 from path_sampler import path_sampler, toy_path_sampler
 
 
-def generate_movement(data_path, transition_matrix_path, 
+def generate_movement(transition_matrix_path, 
                       start_date_str, end_date_str, 
-                      method, window_size=0, 
-                      toy=False, num_toy_departments=10):
+                      method, window_size=0, data_path=None, 
+                      toy=False, num_toy_departments=10,
+                      quick=False, num_entry_path=None, duration_path=None):
     if toy:
         my_entry_sampler = toy_entry_sampler()
         my_duration_sampler = toy_duration_sampler()
         my_path_sampler = toy_path_sampler(num_departments=num_toy_departments)
+    elif quick:
+        my_entry_sampler = quick_entry_sampler(num_entry_path)
+        my_duration_sampler = quick_duration_sampler(duration_path)
+        my_path_sampler = path_sampler(transition_matrix_folder_path=transition_matrix_path)
     else:
         my_entry_sampler = entry_sampler(data_path)
         my_duration_sampler = duration_sampler(data_path)
@@ -79,42 +85,64 @@ def path_to_movement(path_data):
 
     return generated_movement
 
-def run_generation(num_sample, data_path, transition_matrix_folder_path, output_folder_path, 
-                   start_date_str, end_date_str, method, window_size=0, toy=False, num_toy_departments=10):
+def run_generation(num_sample, transition_matrix_folder_path, output_folder_path, 
+                   start_date_str, end_date_str, method, window_size=0, data_path=None, toy=False, num_toy_departments=10,
+                   quick=False, num_entry_path=None, duration_path=None):
     for i in tqdm.tqdm(range(num_sample)):
-        daily_paths = generate_movement(data_path, transition_matrix_folder_path, 
+        daily_paths = generate_movement(transition_matrix_folder_path, 
                                         start_date_str, end_date_str, 
-                                        method, window_size, toy, num_toy_departments)
+                                        method, window_size, data_path, toy, num_toy_departments, 
+                                        quick, num_entry_path, duration_path)
         generated_movement = path_to_movement(daily_paths)
         i = 1
         while True:
             if toy:
-                file_path = os.path.join(output_folder_path, f"generated_movement_toy_{i}.pkl")
+                file_path = os.path.join(output_folder_path, f"toy_{i}.pkl")
             elif method == "sliding_window":
-                file_path = os.path.join(output_folder_path, f"generated_movement_{method}_size_{window_size}_{i}.pkl")
-            else:
-                file_path = os.path.join(output_folder_path, f"generated_movement_{method}_{i}.pkl")
+                file_path = os.path.join(output_folder_path, f"sw_{window_size}_{i}.pkl")
+            elif method == "shorter_only":
+                file_path = os.path.join(output_folder_path, f"so_{i}.pkl")
+            elif method == "longer_only":
+                file_path = os.path.join(output_folder_path, f"lo_{i}.pkl")
             if not os.path.exists(file_path):
                 generated_movement.to_pickle(file_path)
                 print(f"DataFrame saved to {file_path}")
                 break
             i += 1
 
-data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
-transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/transition_matrices"
+# NOTE: Change the Path here!
+transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/transition_matrices"
 output_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/generated_movements"
+
 start_date_str = '2024-01-01'
 end_date_str = '2025-01-01'
 method = "sliding_window"
 window_size = 3
 
+data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
+num_entry_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
+duration_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
+
 num_sample = 1
 
-# NOTE: If first time running, need to uncomment and run this block first to get pre-computed transition matrices
-# my_path_sampler = path_sampler(data_path, transition_matrix_folder_path)
-# Possible methods are "longer_only", "shorter_only", and "sliding_window" with a window_size
-# E.g. my_path_sampler.create_transition_matrices(method="sliding_window", window_size=3)
-# E.g. my_path_sampler.create_transition_matrices(method="longer_only")
+# Alternative: Use Argparse (TBD)
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--transition_matrix_folder_path", type=str)
+# args = parser.parse_args()
 
-run_generation(num_sample, data_path, transition_matrix_folder_path, output_folder_path,
-               start_date_str, end_date_str, method, window_size, toy=True)
+# NOTE: If first time running, need to uncomment and run this block first to get pre-computed transition matrices
+# Possible methods are "longer_only", "shorter_only", and "sliding_window" with a window_size
+# my_path_sampler = path_sampler(data_path, transition_matrix_folder_path)
+# my_path_sampler.create_transition_matrices(method="sliding_window", window_size=3)
+# my_path_sampler.create_transition_matrices(method="longer_only")
+# my_path_sampler.create_transition_matrices(method="shorter_only")
+
+# If using existing entry and duration data, set quick=True, and don't need to set data path
+run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
+               start_date_str, end_date_str, method, window_size=window_size, 
+               quick=True, num_entry_path=num_entry_path, duration_path=duration_path)
+
+# Else, give data path
+# run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
+#                start_date_str, end_date_str, method, window_size=window_size, 
+#                data_path=data_path)
