@@ -110,39 +110,40 @@ def run_generation(num_sample, transition_matrix_folder_path, output_folder_path
                 break
             i += 1
 
-# NOTE: Change the Path here!
-transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/transition_matrices"
-output_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/generated_movements"
+if __name__ == "__main__":
+    # NOTE: Change the Path here!
+    transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/transition_matrices"
+    output_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/generated_movements"
 
-start_date_str = '2024-01-01'
-end_date_str = '2025-01-01'
-method = "sliding_window"
-window_size = 3
+    start_date_str = '2024-01-01'
+    end_date_str = '2025-01-01'
+    method = "sliding_window"
+    window_size = 3
 
-data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
-num_entry_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
-duration_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
+    data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
+    num_entry_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
+    duration_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
 
-num_sample = 1
+    num_sample = 3
 
-# Alternative: Use Argparse (TBD)
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--transition_matrix_folder_path", type=str)
-# args = parser.parse_args()
+    # Alternative: Use Argparse (TBD)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--transition_matrix_folder_path", type=str)
+    # args = parser.parse_args()
 
-# NOTE: If first time running, need to uncomment and run this block first to get pre-computed transition matrices
-# Possible methods are "longer_only", "shorter_only", and "sliding_window" with a window_size
-# my_path_sampler = path_sampler(data_path, transition_matrix_folder_path)
-# my_path_sampler.create_transition_matrices(method="sliding_window", window_size=3)
-# my_path_sampler.create_transition_matrices(method="longer_only")
-# my_path_sampler.create_transition_matrices(method="shorter_only")
+    # NOTE: If first time running, need to uncomment and run this block first to get pre-computed transition matrices
+    # Possible methods are "longer_only", "shorter_only", and "sliding_window" with a window_size
+    # my_path_sampler = path_sampler(data_path, transition_matrix_folder_path)
+    # my_path_sampler.create_transition_matrices(method="sliding_window", window_size=3)
+    # my_path_sampler.create_transition_matrices(method="longer_only")
+    # my_path_sampler.create_transition_matrices(method="shorter_only")
 
-# If using existing entry and duration data, set quick=True, and don't need to set data path
-run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
-               start_date_str, end_date_str, method, window_size=window_size, 
-               quick=True, num_entry_path=num_entry_path, duration_path=duration_path)
+    # If using existing entry and duration data, set quick=True, and don't need to set data path
+    run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
+                start_date_str, end_date_str, method, window_size=window_size, 
+                quick=True, num_entry_path=num_entry_path, duration_path=duration_path)
 
-# Else, give data path
-# run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
-#                start_date_str, end_date_str, method, window_size=window_size, 
-#                data_path=data_path)
+    # Else, give data path
+    # run_generation(num_sample, transition_matrix_folder_path, output_folder_path,
+    #                start_date_str, end_date_str, method, window_size=window_size, 
+    #                data_path=data_path)
