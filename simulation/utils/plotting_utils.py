@@ -1,3 +1,5 @@
+from matplotlib.colors import ListedColormap
+from collections import Counter
 from ..department import Department
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -92,17 +94,50 @@ def visualize_movement_and_test_result(test_result_df, movement_df):
 
     return merged_df, pivot_df
 
-def plot_heatmap(pivot_df, x_range = slice(100), y_range = slice(100)):
-    pivot_np = pivot_df.to_numpy()
-    pivot_np = np.where(np.isnan(pivot_np), 0, pivot_np)
-
-    # plt.figure(figsize=(15,10))
-    plt.imshow(pivot_np[x_range,y_range], cmap='viridis', interpolation='nearest')  # 'cmap' controls the color map
-
-    plt.colorbar()
-
-    plt.title('Heatmap')
-    plt.xlabel('Days')
-    plt.ylabel('Patient')
-
+def plot_CD(simulation, x_range = slice(200), y_range = slice(200)):
+    plt.figure(figsize=(10, 10)) 
+    colors = ['black','white','green', 'yellow', 'red'] 
+    cmap = ListedColormap(colors)
+    plt.imshow(simulation.observed_CD[x_range, y_range], cmap=cmap, interpolation='none')
+    plt.colorbar(ticks=np.arange(len(colors)+1))
     plt.show()
+
+def plot_data_CD(data_path, simulation, x_range = slice(200), y_range = slice(200)):
+    """show the real lab result as condensed matrix
+    """
+    lab_cdiff_sorted = pd.read_csv(data_path)
+    lab_cdiff_sorted['time'] = pd.to_datetime(lab_cdiff_sorted['time'])
+
+    day_zero = pd.to_datetime('2019-11-1')
+    tracker = np.array(simulation.patient_tracker)
+    counts = Counter()
+    data_CD = np.min([np.ones_like(simulation.real_CD), simulation.real_CD], axis=0)
+
+    for i, row in lab_cdiff_sorted.iterrows():
+        day = (row['time'] - day_zero).days + 1
+        location = np.where(tracker[:,day] == row['id'])
+        if len(location[0]) > 0:
+            counts[row['result']] += 1
+            data_CD[location[0][0], day] = row['result']
+
+    plt.figure(figsize=(10, 10)) 
+    colors = ['black','white','green', 'purple', 'red'] 
+    cmap = ListedColormap(colors)
+    plt.imshow(data_CD[x_range, y_range], cmap=cmap, interpolation='none')
+    plt.colorbar(ticks=np.arange(len(colors)+1))
+    plt.show()
+
+# def plot_heatmap(pivot_df, x_range = slice(100), y_range = slice(100)):
+#     pivot_np = pivot_df.to_numpy()
+#     pivot_np = np.where(np.isnan(pivot_np), 0, pivot_np)
+
+#     # plt.figure(figsize=(15,10))
+#     plt.imshow(pivot_np[x_range,y_range], cmap='viridis', interpolation='nearest')  # 'cmap' controls the color map
+
+#     plt.colorbar()
+
+#     plt.title('Heatmap')
+#     plt.xlabel('Days')
+#     plt.ylabel('Patient')
+
+#     plt.show()
