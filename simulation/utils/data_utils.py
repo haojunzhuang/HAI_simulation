@@ -188,8 +188,8 @@ def clean_cdiff_lab_data(path):
     # TODO: check if take max within each group is appropriate
     df = df.groupby([pd.Grouper(key='time', freq='D'), 'id']).max().reset_index()
 
-    # 0 (neither gene or protein), 1 (gene), 2(protein), 3(both gene and protein)
-    df['result'] = df['gene_detected'] + 2 * df['protein_detected']
+    # 1 (neither gene or protein), 2 (gene), 3(both gene and protein)
+    df['result'] = 1 + df['gene_detected'] + df['protein_detected']
 
     df.to_csv(path[:-4]+'_cleaned.csv', index=False)
     return df

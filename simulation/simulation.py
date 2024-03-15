@@ -53,6 +53,7 @@ class Simulation:
         self.uniform_eta = uniform_eta
 
         self.condensed_matrix_mode = False
+        self.real_lab_data_mode = False
 
     def setup(self):
         if self.test:
@@ -145,6 +146,7 @@ class Simulation:
         # condensed matrix
         self.real_CD = np.zeros((height, width))
         self.observed_CD = np.zeros((height, width))
+        self.patient_tracker = [[None] * width for _ in range(height)]
 
 
     def allocate_bed(self, from_dep, to_dep, patient):
@@ -223,10 +225,12 @@ class Simulation:
                 for patient in dep.patients:
                     self.real_CD[patient.location, day] = patient.status.value
                     self.observed_CD[patient.location, day] = 1
-
+                    self.patient_tracker[patient.location][day] = patient.id
+                
                 for patient, status in observed_results.items():
                     self.observed_CD[patient.location, day] = status.value
-            
+
+                # 0: not in hospital; 1: in hospital; 2: tested negative; 3: tested colonized 4: tested infected
 
     def simulate(self, timed = False):
         """
