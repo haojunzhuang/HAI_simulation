@@ -112,7 +112,13 @@ class Simulation:
                 movement_data_path = movement_data_path[:-4] + "_filled.csv"
             mvt.to_csv(movement_data_path)
 
-        return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
+        # return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
+        if movement_data_path.endswith('.csv'):
+            return pd.read_csv(movement_data_path, parse_dates=False)
+        else:
+            result = pd.read_pickle(movement_data_path)
+            result['date'] = result['date'].dt.strftime('%Y-%m-%d')
+            return result
 
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
@@ -130,7 +136,7 @@ class Simulation:
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
         """
-        PADDING = 10
+        PADDING = 20
         
         self.condensed_matrix_mode = True
         assert self.total_days, "Needs to be called on second run"

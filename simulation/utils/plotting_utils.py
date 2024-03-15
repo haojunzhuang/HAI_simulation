@@ -94,11 +94,11 @@ def visualize_movement_and_test_result(test_result_df, movement_df):
 
     return merged_df, pivot_df
 
-def plot_CD(simulation, x_range = slice(200), y_range = slice(200)):
+def plot_CD(CD, x_range = slice(200), y_range = slice(200)):
     plt.figure(figsize=(10, 10)) 
     colors = ['black','white','green', 'yellow', 'red'] 
     cmap = ListedColormap(colors)
-    plt.imshow(simulation.observed_CD[x_range, y_range], cmap=cmap, interpolation='none')
+    plt.imshow(CD[x_range, y_range], cmap=cmap, interpolation='none')
     plt.colorbar(ticks=np.arange(len(colors)+1))
     plt.show()
 
