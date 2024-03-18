@@ -54,11 +54,12 @@ public:
                 std::stringstream ss(line);
                 std::string field;
 
-                std::getline(ss, field, ','); // Weekday
-                std::string weekday = field;
-
-                std::getline(ss, field, ','); // Number of Entries
+                std::getline(ss, field, ','); // index
+                std::getline(ss, field, ','); // date
+                std::getline(ss, field, ','); // num_entry
                 int numEntries = std::stoi(field);
+                std::getline(ss, field, ','); // weekday
+                std::string weekday = field;
 
                 if (weekday == "Saturday" || weekday == "Sunday") {
                     weekendEntries.push_back(numEntries);
@@ -147,10 +148,12 @@ public:
 
             while (std::getline(file, line)) {
                 std::stringstream ss(line);
-                std::string field;
+                std::string field1;
+                std::string field2;
 
-                std::getline(ss, field, ','); // Duration
-                int duration = std::stoi(field);
+                std::getline(ss, field1, ','); // ID
+                std::getline(ss, field2, ','); // Duration
+                int duration = std::stoi(field2);
 
                 durations.push_back(duration);
             }
@@ -512,15 +515,15 @@ void runGeneration(
 }
 
 int main() {
-    std::string transitionMatrixFolderPath = "/path/to/transition_matrices";
-    std::string outputFolderPath = "/path/to/output";
+    std::string transitionMatrixFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/transition_matrices";
+    std::string outputFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/output";
     std::string startDateStr = "2024-01-01";
     std::string endDateStr = "2025-01-01";
     std::string method = "sliding_window";
     int windowSize = 3;
-    std::string dataPath = "/path/to/movements_cleaned_filled.csv";
-    std::string numEntryPath = "/path/to/num_entries.csv";
-    std::string durationPath = "/path/to/durations.csv";
+    std::string dataPath = "/Users/hz9/dev/HAI_simulation/data/movements_cleaned_filled.csvv";
+    std::string numEntryPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv";
+    std::string durationPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/durations/durations.csv";
     int numSample = 3;
 
     runGeneration(
