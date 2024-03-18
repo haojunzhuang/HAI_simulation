@@ -12,7 +12,8 @@ class path_sampler:
         if transition_matrix_folder_path:
             self.transition_matrix_folder_path = transition_matrix_folder_path
 
-    def create_transition_matrices(self, method, max_duration = 100, window_size=None):
+    def create_transition_matrices(self, method, max_duration = 100, window_size=None,
+                                   to_csv=False):
         def create_transition_matrix(data):
             departments = np.unique(data[['from_department', 'to_department']])
 
@@ -54,11 +55,17 @@ class path_sampler:
             filtered_df = filter_patients_by_duration(self.data, k)
             transition_matrix = create_transition_matrix(filtered_df)
             if method == "sliding_window":
-                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_sw_{window_size}.pkl")
+                file_name = f"{self.transition_matrix_folder_path}/{k}_day_sw_{window_size}"
             elif method == "longer_only":
-                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_lo.pkl")
+                file_name = f"{self.transition_matrix_folder_path}/{k}_day_lo.pkl"
             elif method == "shorter_only":
-                transition_matrix.to_pickle(f"{self.transition_matrix_folder_path}/{k}_day_so.pkl")
+                file_name = f"{self.transition_matrix_folder_path}/{k}_day_so.pkl"
+            
+            if to_csv:
+                transition_matrix.to_csv(file_name + ".csv")
+            else:
+                transition_matrix.to_pickle(file_name + ".pkl")
+            
 
     def sample(self, duration, method, window_size=0):
         def simulate_path(transition_matrix, num_step=0, start_state='ADMISSION', end_state='DISCHARGE'):
