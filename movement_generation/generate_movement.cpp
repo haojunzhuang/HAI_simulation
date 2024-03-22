@@ -12,6 +12,10 @@
 #include <ctime>
 #include <iomanip>
 #include <filesystem>
+#include <cassert>
+#include <stdexcept>
+#include <numeric>
+
 
 // TODO: Include necessary C++ libraries for data manipulation (e.g., DataFrames)
 
@@ -177,112 +181,106 @@ private:
 };
 
 class PathSampler {
+
 public:
-    PathSampler(const std::string& transitionMatrixFolderPath) {
-        // Read transition matrix files and populate the transitionMatrices map
-        // Assuming each file is named "transition_matrix_<duration>.csv"
-        for (int duration = 1; duration <= 100; ++duration) {
-            std::string filePath = transitionMatrixFolderPath + "/transition_matrix_" + std::to_string(duration) + ".csv";
-            std::ifstream file(filePath);
-            if (file.is_open()) {
-                std::string line;
-                std::getline(file, line); // Skip the header line
-
-                std::unordered_map<std::string, std::unordered_map<std::string, double> > matrix;
-                while (std::getline(file, line)) {
-                    std::stringstream ss(line);
-                    std::string field;
-
-                    std::getline(ss, field, ','); // From Department
-                    std::string fromDept = field;
-
-                    std::unordered_map<std::string, double> row;
-                    while (std::getline(ss, field, ',')) {
-                        std::string toDept = field;
-                        std::getline(ss, field, ',');
-                        double probability = std::stod(field);
-                        row[toDept] = probability;
-                    }
-
-                    matrix[fromDept] = row;
-                }
-
-                transitionMatrices[duration] = matrix;
-                file.close();
-            }
-        }
+    PathSampler(const std::string& matrix_path = "") { 
+        transition_matrix_folder_path = matrix_path;
     }
 
-    std::vector<std::string> sample(int duration, const std::string& method, int windowSize = 0) {
-        std::vector<std::string> path;
-        path.push_back("ADMISSION");
+    std::vector<std::string> sample(int duration, const std::string& method, int window_size = 0) {
+        assert(duration >= 0);
 
-        std::string currentDept = "ADMISSION";
-        for (int i = 1; i < duration; ++i) {
-            std::unordered_map<std::string, std::unordered_map<std::string, double> > matrix;
-            if (method == "sliding_window") {
-                int start = std::max(1, i - windowSize + 1);
-                int end = i + 1;
-                matrix = getAverageMatrix(start, end);
-            } else if (method == "shorter_only") {
-                matrix = transitionMatrices[i];
-            } else if (method == "longer_only") {
-                matrix = transitionMatrices[duration];
-            }
-
-            std::string nextDept = sampleNextDepartment(currentDept, matrix);
-            path.push_back(nextDept);
-            currentDept = nextDept;
+        std::string filename = transition_matrix_folder_path + "/" + std::to_string(duration) + "_day_";
+        if (method == "sliding_window") {
+            filename += "sw_" + std::to_string(window_size);
+        } else if (method == "shorter_only") {
+            filename += "so";
+        } else if (method == "longer_only") {
+            filename += "lo";
         }
+        filename += ".csv";
 
+        load_transition_matrix(filename);
+
+        std::vector<std::string> path;
+        std::string current_state = "ADMISSION";
+        std::string end_state = "DISCHARGE";
+
+        path.push_back(current_state);
+        if (duration > 0) {
+            for (int i = 0; i < duration; ++i) {
+                current_state = pick_next_state(current_state);
+                path.push_back(current_state);
+            }
+        } else {
+            // for testing only
+            // while (current_state != end_state) {
+            //     current_state = pick_next_state(current_state, end_state);
+            //     path.push_back(current_state);
+            // }
+        }
+        path.push_back(end_state);
         return path;
     }
 
 private:
-    std::unordered_map<int, std::unordered_map<std::string, std::unordered_map<std::string, double> > > transitionMatrices;
+    std::unordered_map<std::string, std::unordered_map<std::string, double>> transition_matrix;
+    std::string transition_matrix_folder_path;
+    int num_states;
 
-    std::string sampleNextDepartment(const std::string& currentDept, const std::unordered_map<std::string, std::unordered_map<std::string, double> >& matrix) {
-        std::vector<std::string> departments;
-        std::vector<double> probabilities;
-        for (const auto& entry : matrix.at(currentDept)) {
-            departments.push_back(entry.first);
-            probabilities.push_back(entry.second);
+    void load_transition_matrix(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open file: " + filename);
         }
 
-        std::discrete_distribution<> distribution(probabilities.begin(), probabilities.end());
+        std::string line;
+        std::vector<std::string> states;
+        int i = -1; // row index
+
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string cell;
+            std::vector<std::string> row;
+
+            std::getline(ss, cell, ','); // skip the first column
+            while (std::getline(ss, cell, ',')) {
+                row.push_back(cell);
+            }
+
+            if (i == -1) {
+                states = row; // This is the header row
+                i += 1;
+                continue;
+            }
+
+            for (size_t j = 0; j < row.size(); j++) {
+                transition_matrix[states[i]][states[j]] = std::stod(row[j]);
+            }
+
+            i += 1;
+        }
+    }
+
+    std::string pick_next_state(const std::string& current_state) {
+        auto& probabilities = transition_matrix[current_state];
+
+        // Extract the weights for the distribution
+        std::vector<double> weights;
+        for (const auto& pair : probabilities) {
+            weights.push_back(pair.second);
+        }
+
         std::random_device rd;
         std::mt19937 gen(rd());
-        int index = distribution(gen);
-        return departments[index];
-    }
+        std::discrete_distribution<> dist(weights.begin(), weights.end());
 
-    std::unordered_map<std::string, std::unordered_map<std::string, double> > getAverageMatrix(int start, int end) {
-        std::unordered_map<std::string, std::unordered_map<std::string, double> > averageMatrix;
-        int count = end - start;
-
-        for (int i = start; i < end; ++i) {
-            const auto& matrix = transitionMatrices[i];
-            for (const auto& entry : matrix) {
-                const std::string& fromDept = entry.first;
-                const auto& row = entry.second;
-                for (const auto& cell : row) {
-                    const std::string& toDept = cell.first;
-                    double probability = cell.second;
-                    averageMatrix[fromDept][toDept] += probability;
-                }
-            }
-        }
-
-        for (auto& entry : averageMatrix) {
-            auto& row = entry.second;
-            for (auto& cell : row) {
-                cell.second /= count;
-            }
-        }
-
-        return averageMatrix;
+        // Generate a random index based on the distribution and find the corresponding next state
+        auto it = std::next(probabilities.begin(), dist(gen));
+        return it->first;
     }
 };
+
 
 // class ToyPathSampler {
 // public:
@@ -515,8 +513,8 @@ void runGeneration(
 }
 
 int main() {
-    std::string transitionMatrixFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/transition_matrices";
-    std::string outputFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/output";
+    std::string transitionMatrixFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/transition_matrices/";
+    std::string outputFolderPath = "/Users/hz9/dev/HAI_simulation/movement_generation/output/";
     std::string startDateStr = "2024-01-01";
     std::string endDateStr = "2025-01-01";
     std::string method = "sliding_window";
@@ -524,7 +522,7 @@ int main() {
     std::string dataPath = "/Users/hz9/dev/HAI_simulation/data/movements_cleaned_filled.csvv";
     std::string numEntryPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv";
     std::string durationPath = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/durations/durations.csv";
-    int numSample = 3;
+    int numSample = 1;
 
     runGeneration(
         numSample,
