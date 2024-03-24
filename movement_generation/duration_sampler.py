@@ -53,5 +53,5 @@ class quick_duration_sampler:
     def __init__(self, duration_path: str) -> None:
         self.durations = pd.read_csv(duration_path)['duration']
     
-    def sample(self, mean=1.3, sd=0.95):
+    def sample(self):
         return random.sample(list(self.durations), 1)[0]

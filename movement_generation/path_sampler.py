@@ -5,12 +5,24 @@ import tqdm
 
 class path_sampler:
     
-    def __init__(self, data_path=None, transition_matrix_folder_path=None) -> None:
+    def __init__(self, method, window_size=0, max_duration=100,
+                 data_path=None, transition_matrix_input_path=None, transition_matrix_output_path=None) -> None:
+        self.method = method
+        self.window_size = window_size
         if data_path:
             data = pd.read_csv(data_path).drop(columns=['Unnamed: 0']).dropna()
             self.data = data
-        if transition_matrix_folder_path:
-            self.transition_matrix_folder_path = transition_matrix_folder_path
+        if transition_matrix_input_path:
+            method_map = {"sliding_window": f"sw_{self.window_size}", "shorter_only": "so", "longer_only": "lo"}
+            self.transition_matrix_input_path = transition_matrix_input_path
+            self.transition_matrices = {}
+            for i in range(1, max_duration+1):
+                path = transition_matrix_input_path+f"/{i}_day_{method_map[method]}.pkl"
+                self.transition_matrices[i] = pd.read_pickle(path)
+        elif transition_matrix_output_path:
+            self.transition_matrix_output_path = transition_matrix_output_path
+        else:
+            raise ValueError("Initialization Error: No Existing Transition Matrix Folder Path nor Output Path")
 
     def create_transition_matrices(self, method, max_duration = 100, window_size=None,
                                    to_csv=False):
@@ -55,11 +67,11 @@ class path_sampler:
             filtered_df = filter_patients_by_duration(self.data, k)
             transition_matrix = create_transition_matrix(filtered_df)
             if method == "sliding_window":
-                file_name = f"{self.transition_matrix_folder_path}/{k}_day_sw_{window_size}"
+                file_name = f"{self.transition_matrix_output_path}/{k}_day_sw_{window_size}"
             elif method == "longer_only":
-                file_name = f"{self.transition_matrix_folder_path}/{k}_day_lo.pkl"
+                file_name = f"{self.transition_matrix_output_path}/{k}_day_lo.pkl"
             elif method == "shorter_only":
-                file_name = f"{self.transition_matrix_folder_path}/{k}_day_so.pkl"
+                file_name = f"{self.transition_matrix_output_path}/{k}_day_so.pkl"
             
             if to_csv:
                 transition_matrix.to_csv(file_name + ".csv")
@@ -67,7 +79,7 @@ class path_sampler:
                 transition_matrix.to_pickle(file_name + ".pkl")
             
 
-    def sample(self, duration, method, window_size=0):
+    def sample(self, duration):
         def simulate_path(transition_matrix, num_step=0, start_state='ADMISSION', end_state='DISCHARGE'):
             """
             Simulate a path through the hospital departments using the transition matrix.
@@ -112,12 +124,7 @@ class path_sampler:
             return path
         
         assert duration >= 0, "Duration needs to be positive"
-        if method == "sliding_window":
-            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_sw_{window_size}.pkl")
-        elif method == "shorter_only":
-            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_so.pkl")
-        elif method == "longer_only":
-            transition_matrix = pd.read_pickle(f"{self.transition_matrix_folder_path}/{duration}_day_lo.pkl")
+        transition_matrix = self.transition_matrices[duration]
 
         return simulate_path(transition_matrix, num_step=duration)
     
