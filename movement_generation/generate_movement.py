@@ -1,10 +1,7 @@
 import datetime
 import pandas as pd
-import random
-import numpy as np
 import tqdm
 import os
-import argparse
 from entry_sampler import entry_sampler, toy_entry_sampler, quick_entry_sampler
 from duration_sampler import duration_sampler, toy_duration_sampler, quick_duration_sampler
 from path_sampler import path_sampler, toy_path_sampler
@@ -116,19 +113,24 @@ def run_generation(num_sample, transition_matrix_folder_path, output_folder_path
 
 if __name__ == "__main__":
     # NOTE: Change the Path here!
-    transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/transition_matrices"
-    output_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/generated_movements"
+    # transition_matrix_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/transition_matrices"
+    transition_matrix_folder_path = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/transition_matrices"
+    # output_folder_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/generated_movements"
+    output_folder_path = "/Users/hz9/dev/HAI_simulation/movement_generation/generated_movements"
 
     start_date_str = '2024-01-01'
     end_date_str = '2025-01-01'
     method = "sliding_window"
     window_size = 3
 
-    data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
-    num_entry_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
-    duration_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
+    # data_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/simulation/data/movements_cleaned.csv"
+    data_path = "/Users/hz9/dev/HAI_simulation/data/movements_cleaned_filled.csv"
+    # num_entry_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
+    num_entry_path = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/entries/num_entries.csv"
+    # duration_path = "/Users/richardzhuang/Desktop/UCSF/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
+    duration_path = "/Users/hz9/dev/HAI_simulation/movement_generation/deid_data/durations/durations.csv"
 
-    num_sample = 1
+    num_sample = 3 
 
     # Alternative: Use Argparse (TBD)
     # parser = argparse.ArgumentParser()

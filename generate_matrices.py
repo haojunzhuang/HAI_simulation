@@ -1,12 +1,13 @@
 import numpy as np
-import pandas as pd
 import os
 from simulation.simulation import Simulation
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
-    movement_folder_path = "movement_generation/deid_data/"
+    movement_folder_path = "movement_generation/generated_movements"
     output_folder_path = "matrix_generation/"
+    matrix_per_movement = 10
 
     for filename in os.listdir(movement_folder_path):
         if filename.endswith('.pkl'):
@@ -20,13 +21,17 @@ if __name__ == "__main__":
                                 test=False,
                                 )
             simulation.simulate()
-
+            
+            print(f'simulating {matrix_per_movement} rounds for {filename}...')
             # second round to generate matrix
-            simulation.init_condensed_matrix()
-            simulation.simulate()
+            for i in tqdm(1, range(matrix_per_movement)+1):
+                simulation.init_condensed_matrix()
+                simulation.simulate()
 
-            # save the matrix
-            full_matrix_path = output_folder_path + filename + '_full'
-            np.save(full_matrix_path, simulation.real_CD)
-            partial_matrix_path =  output_folder_path + filename + '_partial'
-            np.save(partial_matrix_path, simulation.observed_CD)
+                # save the matrix
+                full_matrix_path = output_folder_path + filename + '_full_' + i
+                np.save(full_matrix_path, simulation.real_CD)
+                partial_matrix_path =  output_folder_path + filename + '_partial_'+ i
+                np.save(partial_matrix_path, simulation.observed_CD)
+        else:
+            raise NotImplementedError()
