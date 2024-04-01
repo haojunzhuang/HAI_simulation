@@ -8,7 +8,7 @@ if __name__ == "__main__":
     output_folder_path = "data_generation/generated_matrices/"
     matrix_per_movement = 10
     start_index = 1
-    end_index = 100
+    end_index = 10
     for i in tqdm(range(start_index, end_index+1)):
         filename = f"sw_3_{i}.pkl"
         if filename.endswith('.pkl'):
@@ -31,9 +31,9 @@ if __name__ == "__main__":
                 simulation.simulate(silent=True)
 
                 # save the matrix
-                full_matrix_path = output_folder_path + filename + '_full_' + str(i)
+                full_matrix_path = output_folder_path + filename[:-4] + '_full_' + str(i)
                 np.save(full_matrix_path, simulation.real_CD)
-                partial_matrix_path =  output_folder_path + filename + '_partial_'+ str(i)
+                partial_matrix_path =  output_folder_path + filename[:-4] + '_partial_'+ str(i)
                 np.save(partial_matrix_path, simulation.observed_CD)
         else:
             continue
