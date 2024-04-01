@@ -105,7 +105,7 @@ class Simulation:
                 mvt = compress_self_loop(mvt)
             mvt = keep_departments_of_interest(mvt)
             mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
-            mvt = mvt.sort_values(by="date")
+            mvt = mvt.sort_values(by=['id'], key=lambda x: x != 'DISCHARGE')
 
             movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
             if fill: 
@@ -114,11 +114,13 @@ class Simulation:
 
         # return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
         if movement_data_path.endswith('.csv'):
-            return pd.read_csv(movement_data_path, parse_dates=False)
+            result = pd.read_csv(movement_data_path, parse_dates=False)
         else:
             result = pd.read_pickle(movement_data_path)
             result['date'] = result['date'].dt.strftime('%Y-%m-%d')
-            return result
+        
+        result = result.sort_values(by=['date', 'from_department'], key = lambda x: x == 'ADMISSION' if x.name == 'from_department' else x)
+        return result
 
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
@@ -143,11 +145,14 @@ class Simulation:
         width = self.total_days
         
         self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
+        # self.dep_sizes['EMERGENCY DEPT PARN'] += 20
         height = sum(self.dep_sizes.values())
         self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] 
                             for i in range(self.node_names.index(name))) for name in self.node_names}
+        print(self.dep_sizes, '\n', self.dep_start_pos)
         self.bed_queues = {name: deque([i for i in range(self.dep_start_pos[name], self.dep_start_pos[name]+self.dep_sizes[name])])
                             for name in self.node_names}
+        print(self.bed_queues)
 
         # condensed matrix
         self.real_CD = np.zeros((height, width))
@@ -162,7 +167,12 @@ class Simulation:
             self.bed_queues[from_dep].appendleft(patient.location)
 
         if to_dep != 'DISCHARGE':
-            patient.location = self.bed_queues[to_dep].popleft()
+            try:
+                patient.location = self.bed_queues[to_dep].popleft()
+            except:
+                print(from_dep, to_dep)
+                print(self.bed_queues)
+
         
     
     def move_patient(self, row):

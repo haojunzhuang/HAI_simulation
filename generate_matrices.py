@@ -27,8 +27,8 @@ if __name__ == "__main__":
             # print(f'simulating {matrix_per_movement} rounds for {filename}...')
             # second round to generate matrix
             for i in range(1, matrix_per_movement+1):
-                simulation.init_condensed_matrix(padding=50)
-                simulation.simulate(silent=True)
+                simulation.init_condensed_matrix(padding=10)
+                simulation.simulate(silent=False)
 
                 # save the matrix
                 full_matrix_path = output_folder_path + filename[:-4] + '_full_' + str(i)
