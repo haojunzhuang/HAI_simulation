@@ -3,6 +3,7 @@
 *.ipynb
 *.pkl
 *.npy
+*.zip
 data/
 
 #OS

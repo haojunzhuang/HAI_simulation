@@ -129,14 +129,14 @@ class Simulation:
             print(info)
         return patients, info
     
-    def init_condensed_matrix(self):
+    def init_condensed_matrix(self,padding):
         """
         called on second run, after completing the first simulation
 
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
         """
-        PADDING = 20
+        PADDING = padding
         
         self.condensed_matrix_mode = True
         assert self.total_days, "Needs to be called on second run"
@@ -238,7 +238,7 @@ class Simulation:
 
                 # 0: not in hospital; 1: in hospital; 2: tested negative; 3: tested colonized 4: tested infected
 
-    def simulate(self, timed = False):
+    def simulate(self, timed = False, silent=False):
         """
         Perform the simulation of the given movement data
 
@@ -266,33 +266,41 @@ class Simulation:
             print(f"Simulation End Date: {end_date}")
             print(f"Simulation Duration: {duration}\n")
 
-        with tqdm.tqdm() as pbar:
+        if silent:
             for index, row in self.movements.iterrows():
-
-                if self.test:
-                    print(f"--------Reading Row {index}-------- \n")
-
                 self.move_patient(row) # Move patients first
-
-                if self.test:
-                    print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
-                    print(f"--------Finish Reading Row {index}-------- \n")
-                    time.sleep(3)
-
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
                     current_date += datetime.timedelta(days=1)
-
-                    if self.test:
-                        print(f"--------Processing Day {day}, {current_date}--------\n")
-                    pbar.set_description(f'Processing Day {day}/{duration}')
-
                     self.update_patient_status(day, current_date) # Then update patient status
+        else:
+            with tqdm.tqdm() as pbar:
+                for index, row in self.movements.iterrows():
 
                     if self.test:
-                        print(f"--------Finish Processing Day {day}, {current_date}--------\n")
+                        print(f"--------Reading Row {index}-------- \n")
+
+                    self.move_patient(row) # Move patients first
+
+                    if self.test:
+                        print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
+                        print(f"--------Finish Reading Row {index}-------- \n")
                         time.sleep(3)
-        
+
+                    while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
+                        day += 1
+                        current_date += datetime.timedelta(days=1)
+
+                        if self.test:
+                            print(f"--------Processing Day {day}, {current_date}--------\n")
+                        pbar.set_description(f'Processing Day {day}/{duration}')
+
+                        self.update_patient_status(day, current_date) # Then update patient status
+
+                        if self.test:
+                            print(f"--------Finish Processing Day {day}, {current_date}--------\n")
+                            time.sleep(3)
+            
         self.total_days = day # for init condensed matrix in second run
 
         if self.test:
