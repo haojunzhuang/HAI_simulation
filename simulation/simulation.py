@@ -64,6 +64,7 @@ class Simulation:
 
         self.node_names = self.movements.from_department.unique()
         self.node_names = [name for name in self.node_names if ((name != 'ADMISSION') and (name != 'DISCHARGE'))]
+        self.node_names.sort()
 
         if self.initial_patients and self.initial_info:
             assert set(self.node_names) == set(self.initial_patients.keys())
@@ -105,7 +106,7 @@ class Simulation:
                 mvt = compress_self_loop(mvt)
             mvt = keep_departments_of_interest(mvt)
             mvt = mvt[(mvt['from_department'] != 'ADMISSION' ) | (mvt['to_department'] != 'DISCHARGE')] # handle the edge case of immediate discharge
-            mvt = mvt.sort_values(by="date")
+            mvt = mvt.sort_values(by=['id'], key=lambda x: x != 'DISCHARGE')
 
             movement_data_path = movement_data_path[:-4] + "_cleaned.csv"
             if fill: 
@@ -114,11 +115,13 @@ class Simulation:
 
         # return pd.read_csv(movement_data_path, index_col=0, parse_dates=False)
         if movement_data_path.endswith('.csv'):
-            return pd.read_csv(movement_data_path, parse_dates=False)
+            result = pd.read_csv(movement_data_path, parse_dates=False)
         else:
             result = pd.read_pickle(movement_data_path)
             result['date'] = result['date'].dt.strftime('%Y-%m-%d')
-            return result
+        
+        result = result.sort_values(by=['date', 'from_department'], key = lambda x: x == 'ADMISSION' if x.name == 'from_department' else x)
+        return result
 
     def export_checkpoint(self):
         patients = {name: self.nodes[name].patients for name in self.node_names}
@@ -129,12 +132,14 @@ class Simulation:
             print(info)
         return patients, info
     
-    def init_condensed_matrix(self,padding):
+    def init_condensed_matrix(self, padding):
         """
         called on second run, after completing the first simulation
 
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
+
+        If no padding specified, then use hardcoded value (approximately padding=5)
         """
         PADDING = padding
         
@@ -142,12 +147,25 @@ class Simulation:
         assert self.total_days, "Needs to be called on second run"
         width = self.total_days
         
-        self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
+        if not padding:
+            self.dep_sizes = {'10LS CVT': 70, '13L GEN SURG': 50, 'EMERGENCY DEPT PARN': 50, 
+                              '8L NEUROSCIENCES': 52, '12M MED/SURG/ACUTE TCU': 25, '7E MED/SURG': 21, 
+                              '7L MUSCULOSKELETAL': 47, '12L MEDSURG-ONC/BMT A': 45, '13I M/S ICU': 25, 
+                              '10NE CARD ICU': 23, '15L ADULT ACUTE CARE': 48, '9L TRANSPLANT': 55, 
+                              '8 NICU': 17, '11NE NICU': 22, '14L MEDICINE': 55, '6L NEUR TRAN': 39, 
+                              'PPU': 17, '11L MEDSURG-ONC/BMT B': 44, '14M MS-HI-ACUITY': 41, 
+                              '9NE M/S ICU': 26, '6ICC': 18, '8S TCU': 18, 'PERIOP PARN': 9}
+        else:
+            self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
+        
         height = sum(self.dep_sizes.values())
+        # print(height)
         self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] 
                             for i in range(self.node_names.index(name))) for name in self.node_names}
+        # print(self.dep_sizes)
         self.bed_queues = {name: deque([i for i in range(self.dep_start_pos[name], self.dep_start_pos[name]+self.dep_sizes[name])])
                             for name in self.node_names}
+        # print(self.bed_queues)
 
         # condensed matrix
         self.real_CD = np.zeros((height, width))
@@ -162,7 +180,11 @@ class Simulation:
             self.bed_queues[from_dep].appendleft(patient.location)
 
         if to_dep != 'DISCHARGE':
-            patient.location = self.bed_queues[to_dep].popleft()
+            try:
+                patient.location = self.bed_queues[to_dep].popleft()
+            except:
+                print('allocation failed for', from_dep, to_dep)
+
         
     
     def move_patient(self, row):
@@ -301,7 +323,7 @@ class Simulation:
                             print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                             time.sleep(3)
             
-        self.total_days = day # for init condensed matrix in second run
+        self.total_days = day+1 # for init condensed matrix in second run
 
         if self.test:
             print("---------Simulation END---------\n")
