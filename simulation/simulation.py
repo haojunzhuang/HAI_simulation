@@ -64,6 +64,7 @@ class Simulation:
 
         self.node_names = self.movements.from_department.unique()
         self.node_names = [name for name in self.node_names if ((name != 'ADMISSION') and (name != 'DISCHARGE'))]
+        self.node_names.sort()
 
         if self.initial_patients and self.initial_info:
             assert set(self.node_names) == set(self.initial_patients.keys())
@@ -131,12 +132,14 @@ class Simulation:
             print(info)
         return patients, info
     
-    def init_condensed_matrix(self,padding):
+    def init_condensed_matrix(self, padding):
         """
         called on second run, after completing the first simulation
 
         Initialize a condensed matrix representation analogous to bed management in hospital
         Hopefully convenient for Masked Autoencoder
+
+        If no padding specified, then use hardcoded value (approximately padding=5)
         """
         PADDING = padding
         
@@ -144,15 +147,25 @@ class Simulation:
         assert self.total_days, "Needs to be called on second run"
         width = self.total_days
         
-        self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
-        # self.dep_sizes['EMERGENCY DEPT PARN'] += 20
+        if not padding:
+            self.dep_sizes = {'10LS CVT': 70, '13L GEN SURG': 50, 'EMERGENCY DEPT PARN': 50, 
+                              '8L NEUROSCIENCES': 52, '12M MED/SURG/ACUTE TCU': 25, '7E MED/SURG': 21, 
+                              '7L MUSCULOSKELETAL': 47, '12L MEDSURG-ONC/BMT A': 45, '13I M/S ICU': 25, 
+                              '10NE CARD ICU': 23, '15L ADULT ACUTE CARE': 48, '9L TRANSPLANT': 55, 
+                              '8 NICU': 17, '11NE NICU': 22, '14L MEDICINE': 55, '6L NEUR TRAN': 39, 
+                              'PPU': 17, '11L MEDSURG-ONC/BMT B': 44, '14M MS-HI-ACUITY': 41, 
+                              '9NE M/S ICU': 26, '6ICC': 18, '8S TCU': 18, 'PERIOP PARN': 9}
+        else:
+            self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
+        
         height = sum(self.dep_sizes.values())
+        # print(height)
         self.dep_start_pos = {name: sum(self.dep_sizes[self.node_names[i]] 
                             for i in range(self.node_names.index(name))) for name in self.node_names}
-        print(self.dep_sizes, '\n', self.dep_start_pos)
+        # print(self.dep_sizes)
         self.bed_queues = {name: deque([i for i in range(self.dep_start_pos[name], self.dep_start_pos[name]+self.dep_sizes[name])])
                             for name in self.node_names}
-        print(self.bed_queues)
+        # print(self.bed_queues)
 
         # condensed matrix
         self.real_CD = np.zeros((height, width))
@@ -170,8 +183,7 @@ class Simulation:
             try:
                 patient.location = self.bed_queues[to_dep].popleft()
             except:
-                print(from_dep, to_dep)
-                print(self.bed_queues)
+                print('allocation failed for', from_dep, to_dep)
 
         
     
