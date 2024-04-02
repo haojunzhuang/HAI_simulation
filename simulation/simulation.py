@@ -311,7 +311,7 @@ class Simulation:
                             print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                             time.sleep(3)
             
-        self.total_days = day # for init condensed matrix in second run
+        self.total_days = day+1 # for init condensed matrix in second run
 
         if self.test:
             print("---------Simulation END---------\n")
