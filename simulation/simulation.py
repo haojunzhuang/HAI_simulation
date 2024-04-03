@@ -148,13 +148,13 @@ class Simulation:
         width = self.total_days
         
         if not padding:
-            self.dep_sizes = {'10LS CVT': 70, '13L GEN SURG': 50, 'EMERGENCY DEPT PARN': 50, 
-                              '8L NEUROSCIENCES': 52, '12M MED/SURG/ACUTE TCU': 25, '7E MED/SURG': 21, 
-                              '7L MUSCULOSKELETAL': 47, '12L MEDSURG-ONC/BMT A': 45, '13I M/S ICU': 25, 
-                              '10NE CARD ICU': 23, '15L ADULT ACUTE CARE': 48, '9L TRANSPLANT': 55, 
-                              '8 NICU': 17, '11NE NICU': 22, '14L MEDICINE': 55, '6L NEUR TRAN': 39, 
-                              'PPU': 17, '11L MEDSURG-ONC/BMT B': 44, '14M MS-HI-ACUITY': 41, 
-                              '9NE M/S ICU': 26, '6ICC': 18, '8S TCU': 18, 'PERIOP PARN': 9}
+            self.dep_sizes = {'10LS CVT': 80, '13L GEN SURG': 60, 'EMERGENCY DEPT PARN': 50, 
+                              '8L NEUROSCIENCES': 60, '12M MED/SURG/ACUTE TCU': 30, '7E MED/SURG': 30, 
+                              '7L MUSCULOSKELETAL': 60, '12L MEDSURG-ONC/BMT A': 55, '13I M/S ICU': 30, 
+                              '10NE CARD ICU': 30, '15L ADULT ACUTE CARE': 55, '9L TRANSPLANT': 65, 
+                              '8 NICU': 25, '11NE NICU': 30, '14L MEDICINE': 65, '6L NEUR TRAN': 50, 
+                              'PPU': 25, '11L MEDSURG-ONC/BMT B': 55, '14M MS-HI-ACUITY': 50, 
+                              '9NE M/S ICU': 30, '6ICC': 25, '8S TCU': 25, 'PERIOP PARN': 15}
         else:
             self.dep_sizes = {name: PADDING+max(self.nodes[name].records['total']) for name in self.node_names}
         
@@ -182,8 +182,10 @@ class Simulation:
         if to_dep != 'DISCHARGE':
             try:
                 patient.location = self.bed_queues[to_dep].popleft()
-            except:
-                print('allocation failed for', from_dep, to_dep)
+            except Exception as e:
+                # print(e)
+                print(f'allocation failed for {to_dep}')
+                raise ValueError()
 
         
     
