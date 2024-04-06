@@ -25,7 +25,7 @@ class Simulation:
         initial_info: dict[str, dict] | None,
         uniform_alpha = 0.1, uniform_beta = 0.05, uniform_gamma = 0.1, 
         uniform_delta = 0.15, uniform_zeta = 0.05, uniform_eta = 0.20,
-        test = False,
+        test = False, dummy_transition = False
     ) -> None:
         """_summary_
 
@@ -42,6 +42,7 @@ class Simulation:
         """
         # TODO: Modify Docstring
         self.test = test
+        self.dummy_transition = dummy_transition
         self.movements  = self.import_data(self, movement_data_path, cleaned=cleaned)
         self.initial_patients = initial_patients
         self.initial_info = initial_info
@@ -77,6 +78,9 @@ class Simulation:
         if self.test:
             for name in self.nodes:
                 print(self.nodes[name])
+        
+        if self.dummy_transition:
+            self.dummy_pool = []
 
     @staticmethod
     def import_data(self, movement_data_path: str, cleaned: bool, fill=False, remove_loop=True) -> pd.DataFrame:
@@ -183,8 +187,7 @@ class Simulation:
             try:
                 patient.location = self.bed_queues[to_dep].popleft()
             except Exception as e:
-                # print(e)
-                print(f'allocation failed for {to_dep}')
+                print(e, f'allocation failed for {to_dep}')
                 raise ValueError()
 
         
@@ -214,7 +217,10 @@ class Simulation:
             new_patient = Patient(row['id'], info={})
             if random.random() < self.nodes[row['to_department']].info['alpha']:
                 new_patient.colonize()
-            self.nodes[row['to_department']].accept_patient(new_patient)
+            if self.dummy_transition:
+                self._accept_dummy(self.nodes[row['to_department']], new_patient)
+            else:
+                self.nodes[row['to_department']].accept_patient(new_patient)
             if self.test:
                 print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
             patient = new_patient
@@ -224,14 +230,27 @@ class Simulation:
                 print(f"Before moving: {current_patient}")
             self.nodes[row['from_department']].release_patient(current_patient)
             if row['to_department'] != 'DISCHARGE':
-                self.nodes[row['to_department']].accept_patient(current_patient)
+                if self.dummy_transition:
+                    self._accept_dummy(self.nodes[row['to_department']], current_patient)
+                else:
+                    self.nodes[row['to_department']].accept_patient(current_patient)
             if self.test:
                 print(f"After moving: {current_patient}")
             patient = current_patient
         
         if self.condensed_matrix_mode:
             self.allocate_bed(row['from_department'], row['to_department'], patient)
-    
+
+    def _accept_dummy(self, to_department: Department, patient: Patient):
+        """
+        Temperorily story transitioning patients
+        """
+        self.dummy_pool.append((to_department, patient))
+
+    def _release_dummies(self):
+        for to_department, patient in self.dummy_pool:
+            to_department.accept_patient(patient)
+        self.dummy_pool = []
 
     def update_patient_status(self, day: int, date: datetime.datetime):
         """
@@ -292,10 +311,18 @@ class Simulation:
 
         if silent:
             for index, row in self.movements.iterrows():
+                if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
+                    self._release_dummies()
+
                 self.move_patient(row) # Move patients first
+                
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
                     current_date += datetime.timedelta(days=1)
+
+                    if self.dummy_transition:
+                        self._release_dummies()
+
                     self.update_patient_status(day, current_date) # Then update patient status
         else:
             with tqdm.tqdm() as pbar:
@@ -303,6 +330,9 @@ class Simulation:
 
                     if self.test:
                         print(f"--------Reading Row {index}-------- \n")
+
+                    if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
+                        self._release_dummies()
 
                     self.move_patient(row) # Move patients first
 
@@ -324,6 +354,7 @@ class Simulation:
                         if self.test:
                             print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                             time.sleep(3)
+
             
         self.total_days = day+1 # for init condensed matrix in second run
 
