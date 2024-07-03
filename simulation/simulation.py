@@ -12,6 +12,9 @@ from .utils.data_utils import (compress_by_day, compress_self_loop,
                                read_movement_data)
 from collections import deque
 
+# CD_movement  ----- 0: none; 2: admission; 3: transfer; 4: discharge
+# CD_infection ----- 0: none; 2: tested negative; 3: tested colonized 4: tested infected
+
 class Simulation:
     """
     Network ABM simulation for HAI transmission.
@@ -171,9 +174,10 @@ class Simulation:
                             for name in self.node_names}
         # print(self.bed_queues)
 
-        # condensed matrix
-        self.real_CD = np.zeros((height, width))
-        self.observed_CD = np.zeros((height, width))
+        # condensed matrices
+        self.real_CD_infection = np.zeros((height, width))
+        self.observed_CD_infection = np.zeros((height, width))
+        self.observed_CD_movement = np.zeros((height, width))
         self.patient_tracker = [[None] * width for _ in range(height)]
 
 
@@ -192,7 +196,7 @@ class Simulation:
 
         
     
-    def move_patient(self, row):
+    def move_patient(self, row, day):
         """
         For each row in the movement data, move the patient accordingly
 
@@ -200,6 +204,8 @@ class Simulation:
         ----------
         row : pd.Dataframe
             one row of the movement data
+        day: int
+            current day of the simulation
         """
 
         def find_patient(id, dep):
@@ -224,6 +230,8 @@ class Simulation:
             if self.test:
                 print(f"New Patient Entering: {new_patient} with status {new_patient.status}\n")
             patient = new_patient
+
+        # Handle Transfer
         else:
             current_patient = find_patient(row['id'], self.nodes[row['from_department']].patients)
             if self.test:
@@ -237,9 +245,16 @@ class Simulation:
             if self.test:
                 print(f"After moving: {current_patient}")
             patient = current_patient
-        
+
         if self.condensed_matrix_mode:
             self.allocate_bed(row['from_department'], row['to_department'], patient)
+
+            if row['from_department'] == 'ADMISSION':
+                self.observed_CD_movement[patient.location, day] = 2
+            elif row['to_department'] == 'DISCHARGE':
+                self.observed_CD_movement[patient.location, day] = 4
+            else:
+                self.observed_CD_movement[patient.location, day] = 3
 
     def _accept_dummy(self, to_department: Department, patient: Patient):
         """
@@ -272,14 +287,15 @@ class Simulation:
                 observed_results = dep.surveil(test = self.test)
                 
                 for patient in dep.patients:
-                    self.real_CD[patient.location, day] = patient.status.value
-                    self.observed_CD[patient.location, day] = 1
+                    self.real_CD_infection[patient.location, day] = patient.status.value
                     self.patient_tracker[patient.location][day] = patient.id
+                    if self.observed_CD_movement[patient.location, day] != 2:
+                        self.observed_CD_movement[patient.location, day] = 2 # if in hospital not marked then mark
                 
                 for patient, status in observed_results.items():
-                    self.observed_CD[patient.location, day] = status.value
+                    self.observed_CD_infection[patient.location, day] = status.value
 
-                # 0: not in hospital; 1: in hospital; 2: tested negative; 3: tested colonized 4: tested infected
+                # 0: none; 2: tested negative; 3: tested colonized 4: tested infected
 
     def simulate(self, timed = False, silent=False):
         """
@@ -314,7 +330,7 @@ class Simulation:
                 if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     self._release_dummies()
 
-                self.move_patient(row) # Move patients first
+                self.move_patient(row, day) # Move patients first
                 
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
@@ -334,7 +350,7 @@ class Simulation:
                     if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                         self._release_dummies()
 
-                    self.move_patient(row) # Move patients first
+                    self.move_patient(row, day) # Move patients first
 
                     if self.test:
                         print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
