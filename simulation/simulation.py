@@ -13,7 +13,7 @@ from .utils.data_utils import (compress_by_day, compress_self_loop,
 from collections import deque
 
 # CD_movement  ----- 0: none; 1: admission; 2:stay; 3: transfer; 4: discharge
-# CD_infection ----- 0: none; 2: tested negative; 3: tested colonized 4: tested infected
+# CD_infection ----- 0: none; 1: unkown; 2: tested negative; 3: tested colonized 4: tested infected
 
 class Simulation:
     """
@@ -288,6 +288,8 @@ class Simulation:
                 
                 for patient in dep.patients:
                     self.real_CD_infection[patient.location, day] = patient.status.value
+                    self.observed_CD_infection[patient.location, day] = 1
+
                     self.patient_tracker[patient.location][day] = patient.id
                     if self.observed_CD_movement[patient.location, day] != 1: # if not admission
                         self.observed_CD_movement[patient.location, day] = 2  # then patient continue to stay
