@@ -297,7 +297,7 @@ class Simulation:
 
                 # 0: none; 2: tested negative; 3: tested colonized 4: tested infected
 
-    def simulate(self, timed = False, silent=False):
+    def simulate(self, timed = False):
         """
         Perform the simulation of the given movement data
 
@@ -325,51 +325,34 @@ class Simulation:
             print(f"Simulation End Date: {end_date}")
             print(f"Simulation Duration: {duration}\n")
 
-        if silent:
+
             for index, row in self.movements.iterrows():
+
+                if self.test:
+                    print(f"--------Reading Row {index}-------- \n")
+
                 if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     self._release_dummies()
 
                 self.move_patient(row, day) # Move patients first
-                
+
+                if self.test:
+                    print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
+                    print(f"--------Finish Reading Row {index}-------- \n")
+                    time.sleep(3)
+
                 while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
                     day += 1
                     current_date += datetime.timedelta(days=1)
 
-                    if self.dummy_transition:
-                        self._release_dummies()
+                    if self.test:
+                        print(f"--------Processing Day {day}, {current_date}--------\n")
 
                     self.update_patient_status(day, current_date) # Then update patient status
-        else:
-            with tqdm.tqdm() as pbar:
-                for index, row in self.movements.iterrows():
 
                     if self.test:
-                        print(f"--------Reading Row {index}-------- \n")
-
-                    if self.dummy_transition and datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
-                        self._release_dummies()
-
-                    self.move_patient(row, day) # Move patients first
-
-                    if self.test:
-                        print(f"Current row is at {row['date']}, Day {(datetime.datetime.strptime(row['date'], '%Y-%m-%d') - start_date).days}")
-                        print(f"--------Finish Reading Row {index}-------- \n")
+                        print(f"--------Finish Processing Day {day}, {current_date}--------\n")
                         time.sleep(3)
-
-                    while datetime.datetime.strptime(row['date'], "%Y-%m-%d") != current_date:
-                        day += 1
-                        current_date += datetime.timedelta(days=1)
-
-                        if self.test:
-                            print(f"--------Processing Day {day}, {current_date}--------\n")
-                        pbar.set_description(f'Processing Day {day}/{duration}')
-
-                        self.update_patient_status(day, current_date) # Then update patient status
-
-                        if self.test:
-                            print(f"--------Finish Processing Day {day}, {current_date}--------\n")
-                            time.sleep(3)
 
             
         self.total_days = day+1 # for init condensed matrix in second run
