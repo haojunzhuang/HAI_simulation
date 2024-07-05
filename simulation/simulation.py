@@ -12,7 +12,7 @@ from .utils.data_utils import (compress_by_day, compress_self_loop,
                                read_movement_data)
 from collections import deque
 
-# CD_movement  ----- 0: none; 2: admission; 3: transfer; 4: discharge
+# CD_movement  ----- 0: none; 1: admission; 2:stay; 3: transfer; 4: discharge
 # CD_infection ----- 0: none; 2: tested negative; 3: tested colonized 4: tested infected
 
 class Simulation:
@@ -250,10 +250,10 @@ class Simulation:
             self.allocate_bed(row['from_department'], row['to_department'], patient)
 
             if row['from_department'] == 'ADMISSION':
-                self.observed_CD_movement[patient.location, day] = 2
+                self.observed_CD_movement[patient.location, day] = 1
             elif row['to_department'] == 'DISCHARGE':
                 self.observed_CD_movement[patient.location, day] = 4
-            else:
+            else: # transfer
                 self.observed_CD_movement[patient.location, day] = 3
 
     def _accept_dummy(self, to_department: Department, patient: Patient):
@@ -289,8 +289,8 @@ class Simulation:
                 for patient in dep.patients:
                     self.real_CD_infection[patient.location, day] = patient.status.value
                     self.patient_tracker[patient.location][day] = patient.id
-                    if self.observed_CD_movement[patient.location, day] != 2:
-                        self.observed_CD_movement[patient.location, day] = 2 # if in hospital not marked then mark
+                    if self.observed_CD_movement[patient.location, day] != 1: # if not admission
+                        self.observed_CD_movement[patient.location, day] = 2  # then patient continue to stay
                 
                 for patient, status in observed_results.items():
                     self.observed_CD_infection[patient.location, day] = status.value
