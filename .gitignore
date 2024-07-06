@@ -4,6 +4,7 @@
 *.pkl
 *.npy
 *.zip
+*.pt
 data/
 
 #OS
