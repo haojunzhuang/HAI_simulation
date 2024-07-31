@@ -83,47 +83,74 @@ def normalize_input(input_image_tensor:torch.Tensor):
     """
     return (input_image_tensor - 2) / 2
 
+def train(model, optimizer, loss_fn, num_epochs, device, train_loader, val_loader, save_path):
+    training_losses = []
+    validation_losses = []
 
-if __name__ == "__main__":
-    FULL_IMAGE_PATH = "generated_matrices_cutted/sw_3_501_full_1.png"
-    PARTIAL_IMAGE_PATH = "generated_matrices_cutted/sw_3_501_partial_1.png"
-    FOLDER_PATH = "generated_matrices_cutted"
-    # full_image_tensor = png_to_tensor(FULL_IMAGE_PATH)
-    # partial_image_tensor = png_to_tensor(PARTIAL_IMAGE_PATH)
-    # print(full_image_tensor)
-    # print(normalize_input(full_image_tensor))
-    # print(np.unique(full_image_tensor, return_counts=True))
-    # print(np.unique(normalize_input(full_image_tensor), return_counts=True))
-    # full_image_order, partial_image_order, full_images, partial_images = prepare_tensor_images(FOLDER_PATH)
-    # with open('data/full_image_order.json', 'w') as file:
-    #     json.dump(full_image_order, file)
-    # with open('data/partial_image_order.json', 'w') as file:
-    #     json.dump(partial_image_order, file)
-    # torch.save(full_images, 'data/full_images.pth')
-    # torch.save(partial_images, 'data/partial_images.pth')
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
 
-    # partial_images = torch.tensor([
-    #     [[0, 1, 2], [3, 1, 4], [1, 1, 1]],
-    #     [[0, 1, 2], [3, 1, 4], [1, 1, 1]]
-    # ])
-    # full_images = torch.tensor([
-    #     [[0, 2, 2], [3, 4, 4], [2, 2, 2]],
-    #     [[0, 2, 2], [3, 4, 4], [2, 2, 2]]
-    # ])
-    # ratio = 0
+        for i, (x, y) in enumerate(tqdm(train_loader)):
+            y = F.pad(input=y, pad=(0, 0, 6, 0), mode='constant', value=0)  # Ensure y's dimension is a multiple of 8
+            x, y = x.to(device), y.type(torch.LongTensor).to(device)
 
-    # interpolated_images = interpolate(partial_images, full_images, ratio)
-    # print(interpolated_images)
+            optimizer.zero_grad()
+            y_pred, mu, logvar = model(x)
+            loss = loss_fn(y, y_pred, mu, logvar)
+            loss.backward()
+            optimizer.step()
 
-    # full_images = torch.load('data/full_images.pth')
-    # partial_images = torch.load('data/partial_images.pth')
-    # interpolated_images_20 = interpolate(partial_images, full_images, ratio=0.2)
-    # interpolated_images_50 = interpolate(partial_images, full_images, ratio=0.5)
-    # interpolated_images_75 = interpolate(partial_images, full_images, ratio=0.75)
-    # interpolated_images_90 = interpolate(partial_images, full_images, ratio=0.9)
-    # interpolated_images_95 = interpolate(partial_images, full_images, ratio=0.95)
-    # torch.save(interpolated_images_20, 'data/interpolated_images_20.pth')
-    # torch.save(interpolated_images_50, 'data/interpolated_images_50.pth')
-    # torch.save(interpolated_images_75, 'data/interpolated_images_75.pth')
-    # torch.save(interpolated_images_90, 'data/interpolated_images_90.pth')
-    # torch.save(interpolated_images_95, 'data/interpolated_images_95.pth')
+            running_loss += loss.item()
+
+            if (i + 1) % 10 == 0:
+                print(f'Epoch {epoch + 1}, Batch {i + 1}, Loss: {running_loss / (i + 1):.4f}')
+        
+        avg_train_loss = running_loss / len(train_loader)
+        training_losses.append(avg_train_loss)
+        
+        avg_val_loss = validate(model, loss_fn, device, val_loader, save_path, epoch)
+        validation_losses.append(avg_val_loss)
+        
+    return training_losses, validation_losses
+
+def validate(model, loss_fn, device, dataloader, save_path, epoch):
+    model.eval()
+    val_loss = 0.0
+
+    with torch.no_grad():
+        for i, (x, y) in enumerate(dataloader):
+            y = F.pad(input=y, pad=(0, 0, 6, 0), mode='constant', value=0)  # Ensure y's dimension is a multiple of 8
+            x, y = x.to(device), y.type(torch.LongTensor).to(device)
+
+            y_pred, mu, logvar = model(x)
+            loss = loss_fn(y, y_pred, mu, logvar)
+            val_loss += loss.item()
+
+            # Save the first batch's reconstructed image for visualization
+            if i == 0:
+                save_reconstructed_images(x, y_pred, save_path, epoch)
+
+    avg_val_loss = val_loss / len(dataloader)
+    print(f'Validation Loss: {avg_val_loss:.4f}')
+    return avg_val_loss
+
+def save_reconstructed_images(input_images, reconstructed_images, save_path, epoch):
+    input_images = input_images.cpu().numpy()
+    reconstructed_images = reconstructed_images.cpu().numpy()
+    # reconstructed_images = reconstructed_images.argmax(axis=1)
+    # print(input_images.shape, reconstructed_images.shape)
+
+    fig, axs = plt.subplots(2, input_images.shape[0], figsize=(15, 5))
+
+    for i in range(input_images.shape[0]):
+        axs[0, i].imshow(input_images[i], interpolation='none')
+        axs[0, i].set_title("Original")
+        axs[0, i].axis('off')
+
+        axs[1, i].imshow(reconstructed_images[i], interpolation='none')
+        axs[1, i].set_title("Reconstructed")
+        axs[1, i].axis('off')
+
+    plt.savefig(f'{save_path}/reconstructed_epoch_{epoch}.png')
+    plt.close()
